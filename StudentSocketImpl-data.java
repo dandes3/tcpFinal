@@ -33,6 +33,10 @@ class StudentSocketImpl extends BaseSocketImpl {
 	private static final int LAST_ACK = 9;
 	private static final int TIME_WAIT = 10;
 
+	static final int data_bytes_per_packet = 1000;
+
+	private TCPPacket last_packet_sent = null;
+
 	private PipedOutputStream appOS;
 	private PipedInputStream appIS;
 	private PipedInputStream pipeAppToSocket;
@@ -42,6 +46,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 	private boolean terminating = false;
 	private InfiniteBuffer sendBuffer;
 	private InfiniteBuffer recvBuffer;
+
+	private int sendBuffer_fullness = 0;
 
 	StudentSocketImpl(Demultiplexer D) {  // default constructor
 		this.D = D;
@@ -193,12 +199,27 @@ class StudentSocketImpl extends BaseSocketImpl {
 	}
 
 	synchronized void sendData() {
-		byte buf[1000];
-		sendBuffer.copyOut(buf, sendBuffer.getBase(), 1000);
-		TCPPacket p = new TCPPacket(
-				localport, port, int seqNum, int ackNum,
-				boolean ackFlag, boolean synFlag, boolean finFlag,
-				int windowSize, byte[] data);
+		if (sendBuffer_fullness < data_bytes_per_packet)
+			return;
+
+		sendBuffer_fullness -= data_bytes_per_packet;
+
+		byte buf[] = new byte[data_bytes_per_packet];
+		sendBuffer.copyOut(buf, sendBuffer.getBase(), data_bytes_per_packet);
+
+		if (last_packet_sent && (seqNum == last_packet_sent.seqNum)) {
+			sendPacket(last_packet_sent, true);
+			return;
+		}
+
+		last_packet_sent = new TCPPacket(localport, port, seqNum, ackNum,
+				true,	/* ack */
+				false,	/* syn */
+				false,	/* fin */
+				1000,	/* window size: TODO FIXME chosen arbitrarily */
+				p);
+
+		sendPacket(last_packet_sent, false);
 	}
 
 	/**
@@ -219,6 +240,9 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * @param length number of bytes to copy
 	 */
 	synchronized void dataFromApp(byte[] buffer, int length){
+		/* TODO FIXME: what happens when the sendBuffer becomes overfull? */
+		sendBuffer_fullness += length;
+		sendBuffer.append(buffer, 0, length);
 	}
 
 	/**
@@ -299,6 +323,19 @@ class StudentSocketImpl extends BaseSocketImpl {
 				//client or server state
 				cancelPacketTimer();
 				changeToState(TIME_WAIT);
+
+			/* ACKing a data packet we sent */
+			} else if (last_packet_sent) {
+				int expected_next_seq = seqNum + last_packet_sent.getData();
+
+				/* advance the buffer if we didn't lose the packet */
+				if (p.ackNum == expected_next_seq) {
+					seqNum = expected_next_seq;
+					sendBuffer.advance(last_packet_sent.getData());
+				}
+
+				/* try to send more from sendBuffer */
+				sendData();
 			}
 		}
 		else if(p.synFlag == true){
