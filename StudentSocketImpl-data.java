@@ -199,18 +199,20 @@ class StudentSocketImpl extends BaseSocketImpl {
 	}
 
 	synchronized void sendData() {
+
+		/* not enough data to send a packet. TODO: let this be
+		 * overridden to flush buffer at close */
 		if (sendBuffer_fullness < data_bytes_per_packet)
+			return;
+
+		/* last packet wasn't acknowledged; don't send yet */
+		if (last_packet_sent && (seqNum == last_packet_sent.seqNum))
 			return;
 
 		sendBuffer_fullness -= data_bytes_per_packet;
 
 		byte buf[] = new byte[data_bytes_per_packet];
 		sendBuffer.copyOut(buf, sendBuffer.getBase(), data_bytes_per_packet);
-
-		if (last_packet_sent && (seqNum == last_packet_sent.seqNum)) {
-			sendPacket(last_packet_sent, true);
-			return;
-		}
 
 		last_packet_sent = new TCPPacket(localport, port, seqNum, ackNum,
 				true,	/* ack */
@@ -325,7 +327,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 				cancelPacketTimer();
 				changeToState(TIME_WAIT);
 
-			/* ACKing a data packet we sent */
+			/* ACKed a data packet we sent */
 			} else if (last_packet_sent) {
 				int expected_next_seq = seqNum + last_packet_sent.getData();
 
@@ -333,10 +335,12 @@ class StudentSocketImpl extends BaseSocketImpl {
 				if (p.ackNum == expected_next_seq) {
 					seqNum = expected_next_seq;
 					sendBuffer.advance(last_packet_sent.getData());
-				}
+					sendData();
 
-				/* try to send more from sendBuffer */
-				sendData();
+				/* resend the packet if it appears to have been lost */
+				} else {
+					sendPacket(last_packet_sent, true);
+				}
 			}
 		}
 		else if(p.synFlag == true){
