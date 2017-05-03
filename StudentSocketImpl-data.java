@@ -44,14 +44,18 @@ class StudentSocketImpl extends BaseSocketImpl {
 	private SocketReader reader;
 	private SocketWriter writer;
 	private boolean terminating = false;
+
 	private InfiniteBuffer sendBuffer;
 	private InfiniteBuffer recvBuffer;
 
 	private int sendBuffer_fullness = 0;
 
+	private int unAckPackTrack; 
+
 	StudentSocketImpl(Demultiplexer D) {  // default constructor
 		this.D = D;
 		state = CLOSED;
+		unAckPackTrack = 0;
 		seqNum = -1;
 		ackNum = -1;
 		timerList = new Hashtable<Integer, TCPTimerTask>();
@@ -196,6 +200,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * initialize buffers and set up sequence numbers
 	 */
 	private void initBuffers(){
+		sendBuffer = new InfiniteBuffer();
+		recvBuffer = new InfiniteBuffer();
 	}
 
 	synchronized void sendData() {
@@ -206,7 +212,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			return;
 
 		/* last packet wasn't acknowledged; don't send yet */
-		if (last_packet_sent && (seqNum == last_packet_sent.seqNum))
+		if ((last_packet_sent != null) && (seqNum == last_packet_sent.seqNum))
 			return;
 
 		sendBuffer_fullness -= data_bytes_per_packet;
@@ -219,7 +225,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 				false,	/* syn */
 				false,	/* fin */
 				1000,	/* window size: TODO FIXME chosen arbitrarily */
-				p);
+				);
 
 		sendPacket(last_packet_sent, false);
 	}
@@ -328,7 +334,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 				changeToState(TIME_WAIT);
 
 			/* ACKed a data packet we sent */
-			} else if (last_packet_sent) {
+			} else if (last_packet_sent != null) {
 				int expected_next_seq = seqNum + last_packet_sent.getData();
 
 				/* advance the buffer if we didn't lose the packet */
