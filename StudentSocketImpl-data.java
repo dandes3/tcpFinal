@@ -243,6 +243,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		/* TODO FIXME: what happens when the sendBuffer becomes overfull? */
 		sendBuffer_fullness += length;
 		sendBuffer.append(buffer, 0, length);
+		sendData();
 	}
 
 	/**
