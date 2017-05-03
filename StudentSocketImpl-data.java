@@ -128,20 +128,12 @@ class StudentSocketImpl extends BaseSocketImpl {
 			inPacket.seqNum = -2;
 		}
 
-		if(resend == false){ //new timer, and requires the current state as a key
-			TCPWrapper.send(inPacket, address);
-
-			//only do timers for syns, syn-acks, and fins
-			if(inPacket.synFlag == true || inPacket.finFlag == true){
-				System.out.println("Creating new TimerTask at state " + stateString(state));
-				timerList.put(new Integer(state),createTimerTask(1000, inPacket));
-				packetList.put(new Integer(state), inPacket);
-			}
-		}
-		else{ //the packet is for resending, and requires the original state as the key
+		if (resend) {
+			//the packet is for resending, and requires the original state as the key
 			Enumeration keyList = timerList.keys();
 			Integer currKey = new Integer(-1);
-			try{
+
+			try {
 				for(int i = 0; i<10; i++){
 					currKey = (Integer)keyList.nextElement();
 
@@ -155,6 +147,18 @@ class StudentSocketImpl extends BaseSocketImpl {
 			}
 			catch(NoSuchElementException nsee){
 			}
+
+			return;
+		}
+
+		// new timer, and requires the current state as a key
+		TCPWrapper.send(inPacket, address);
+
+		// only do timers for syns, syn-acks, and fins
+		if(inPacket.synFlag == true || inPacket.finFlag == true){
+			System.out.println("Creating new TimerTask at state " + stateString(state));
+			timerList.put(new Integer(state),createTimerTask(1000, inPacket));
+			packetList.put(new Integer(state), inPacket);
 		}
 	}
 
@@ -181,10 +185,20 @@ class StudentSocketImpl extends BaseSocketImpl {
 			packetList.remove(FIN_WAIT_1);
 		}
 	}
+
 	/**
 	 * initialize buffers and set up sequence numbers
 	 */
 	private void initBuffers(){
+	}
+
+	synchronized void sendData() {
+		byte buf[1000];
+		sendBuffer.copyOut(buf, sendBuffer.getBase(), 1000);
+		TCPPacket p = new TCPPacket(
+				localport, port, int seqNum, int ackNum,
+				boolean ackFlag, boolean synFlag, boolean finFlag,
+				int windowSize, byte[] data);
 	}
 
 	/**
@@ -418,6 +432,9 @@ class StudentSocketImpl extends BaseSocketImpl {
 			return;
 
 		System.out.println("*** close() was called by the application.");
+
+		/* TODO: send all remaining data */
+
 		terminating = true;
 
 		while(!reader.tryClose()){
