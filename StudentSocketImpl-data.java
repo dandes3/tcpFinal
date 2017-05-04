@@ -256,11 +256,11 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * Basically a nice little wrapper function that protects the inherently unsafe *infinite* circular buffer. 
 	 * Wraps all attempts at reading with a safety fallout if the buffer tries to read garbage data. 
 	 */
-	private synchronized byte[] attemptRead(boolean readBuf, byte[] buffer, int length){
+	private synchronized byte[] attemptRead(boolean sendBuf, byte[] buffer, int length){
 		
 		System.out.println("In attemptRead");
 
-		if(readBuf){
+		if(sendBuf){
 			if ((length == 0) || ((sendBufLeft + length) > sendBufSize)) { // Control for bogus length of read 0
 				System.out.println("Reading too far or given length of zero. I can't believe you've done this.");
 				return(null);
@@ -298,7 +298,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			if (packSize > (recvWindow - sentSpace)){ packSize = (recvWindow - sentSpace);}
 
 			byte[] passer = new byte[packSize];
-			byte[] payload = attemptRead(payload, packSize);
+			byte[] payload = attemptRead(true, passer, packSize);
 
 			TCPPacket payloadPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, false, sendBufSize - sendBufLeft, payload);
 
@@ -336,7 +336,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			minReaderVal = length;
 		}
 
-		buffer = attemptRead(buffer, minReaderVal);
+		buffer = attemptRead(false, buffer, minReaderVal);
 
 		notifyAll();
 		return minReaderVal;
