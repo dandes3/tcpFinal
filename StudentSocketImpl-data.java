@@ -313,6 +313,11 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 			byte[] passer = new byte[packSize];
 			byte[] payload = attemptRead(true, passer, packSize);
+		
+			// Throws gotten string at screen after decoding
+			String puller = new String(payload);
+			System.out.println("This is the string being inserted into the packet");
+			System.out.println(puller);
 
 			TCPPacket payloadPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, false, sendBufSize - sendBufLeft, payload);
 
