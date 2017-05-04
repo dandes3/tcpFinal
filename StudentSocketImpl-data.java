@@ -311,7 +311,9 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * @param length number of bytes to copy
 	 */
 	synchronized void dataFromApp(byte[] buffer, int length){
+		System.out.println("In dataFromApp");
 		while (sendBufLeft == 0){
+			System.out.println("In dataFromApp wait loop");
 			try {wait();} 
 			catch (InterruptedException e){e.printStackTrace();}
 		}
@@ -350,6 +352,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * @param p The packet that arrived
 	 */
 	public synchronized void receivePacket(TCPPacket p){
+		System.out.println("Running receivePacket again");
 
 		this.notifyAll();
 		recvWindow = p.windowSize;
@@ -370,7 +373,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 				cancelPacketTimer();
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, 1, null);
 				changeToState(ESTABLISHED);
-				sendPacket(ackPacket, false);
 				sendPacket(ackPacket, false);
 			}
 			else if (state == ESTABLISHED){
