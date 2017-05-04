@@ -350,7 +350,9 @@ class StudentSocketImpl extends BaseSocketImpl {
 			minReaderVal = length;
 		}
 
-		buffer = attemptRead(false, buffer, 4);
+		System.out.println(minReaderVal);
+
+		buffer = attemptRead(false, buffer, minReaderVal);
 		
 		// Throws gotten string at screen after decoding
 		String puller = new String(buffer);
