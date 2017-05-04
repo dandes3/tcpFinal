@@ -350,7 +350,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			minReaderVal = length;
 		}
 
-		buffer = attemptRead(false, buffer, 5);
+		buffer = attemptRead(false, buffer, 4);
 		
 		// Throws gotten string at screen after decoding
 		String puller = new String(buffer);
