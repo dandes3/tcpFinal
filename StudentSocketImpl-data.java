@@ -391,6 +391,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 				//server state
 				cancelPacketTimer();
 				changeToState(ESTABLISHED);
+				System.out.println("This is location 1");
 			}
 			else if(state == FIN_WAIT_1){
 				//client state
