@@ -272,7 +272,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 	private synchronized byte[] attemptRead(boolean sendBuf, byte[] buffer, int length){
 		
 		
-
 		if(sendBuf){
 			System.out.println("In attemptRead send");
 			if ((length == 0) || ((sendBufLeft + length) > sendBufSize)) { // Control for bogus length of read 0
@@ -352,6 +351,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		}
 
 		buffer = attemptRead(false, buffer, minReaderVal);
+		System.out.println(buffer);
 
 		notifyAll();
 		return minReaderVal;
