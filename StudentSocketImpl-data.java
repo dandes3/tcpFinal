@@ -136,7 +136,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			catch(IOException ioe){}
 		}
 		else if(newState == TIME_WAIT){
-			createTimerTask(300, null);
+			createTimerTask(3000, null);
 		}
 	}
 
