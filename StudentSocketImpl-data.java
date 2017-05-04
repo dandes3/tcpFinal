@@ -229,10 +229,11 @@ class StudentSocketImpl extends BaseSocketImpl {
 			return;
 		}
 
+		System.out.println("WTF");
 		bufLeft -= length;
 		toAppend.append(buffer, 0, length);
 		System.out.println(bufLeft);
-		System.out.println("WTF");
+
 		return;
 	}
 
