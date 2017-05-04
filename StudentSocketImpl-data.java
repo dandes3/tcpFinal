@@ -314,7 +314,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			System.out.print(packSize);
 
 			byte[] passer = new byte[packSize];
-			byte[] payload = attemptRead(true, passer, 3);
+			byte[] payload = attemptRead(true, passer, packSize);
 		
 			// Throws gotten string at screen after decoding
 			String puller = new String(payload);
