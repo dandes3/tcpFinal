@@ -352,9 +352,14 @@ class StudentSocketImpl extends BaseSocketImpl {
 	public synchronized void receivePacket(TCPPacket p){
 
 		this.notifyAll();
+		recvWindow = p.windowSize;
 
 		System.out.println("Packet received from address " + p.sourceAddr + " with seqNum " + p.seqNum + " is being processed.");
 		System.out.print("The packet is ");
+
+		if (p.data != null){
+			if (state == ESTABLISHED){ sendData();}
+		}
 
 		if(p.ackFlag == true && p.synFlag == true){
 			System.out.println("a syn-ack.");
