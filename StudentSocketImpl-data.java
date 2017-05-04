@@ -324,11 +324,11 @@ class StudentSocketImpl extends BaseSocketImpl {
 			try {wait();} 
 			catch (InterruptedException e){e.printStackTrace();}
 		}
-		System.out.println(bufLeft);
+		System.out.println(sendBufLeft);
 
 		attemptAppend(sendBuffer, sendBufLeft, sendBufSize, buffer, length);
 
-		System.out.println(bufLeft);
+		System.out.println(sendBufLeft);
 
 		if (terminating){pushed = true;}
 
