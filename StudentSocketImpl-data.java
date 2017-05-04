@@ -271,9 +271,10 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 */
 	private synchronized byte[] attemptRead(boolean sendBuf, byte[] buffer, int length){
 		
-		System.out.println("In attemptRead");
+		
 
 		if(sendBuf){
+			System.out.println("In attemptRead send");
 			if ((length == 0) || ((sendBufLeft + length) > sendBufSize)) { // Control for bogus length of read 0
 				System.out.println("Reading too far or given length of zero. I can't believe you've done this.");
 				return(null);
@@ -285,6 +286,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			return(buffer);
 		}
 		else{
+			System.out.println("In attemptRead recv");
 			if ((length == 0) || ((recvBufLeft + length) > recvBufSize)) { // Control for bogus length of read 0
 				System.out.println("Reading too far or given length of zero. I can't believe you've done this.");
 				return(null);
