@@ -311,6 +311,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 			if (packSize > (sendBufSize - sendBufLeft)){ packSize = (sendBufSize - sendBufLeft);}
 			if (packSize > (recvWindow - sentSpace)){ packSize = (recvWindow - sentSpace);}
 
+			System.out.print(packSize);
+
 			byte[] passer = new byte[packSize];
 			byte[] payload = attemptRead(true, passer, packSize);
 		
