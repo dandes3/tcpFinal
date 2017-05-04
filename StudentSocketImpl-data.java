@@ -256,17 +256,33 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * Basically a nice little wrapper function that protects the inherently unsafe *infinite* circular buffer. 
 	 * Wraps all attempts at reading with a safety fallout if the buffer tries to read garbage data. 
 	 */
-	private synchronized void attemptRead(InfiniteBuffer toRead, int bufLeft, int bufSize, byte[] buffer, int length){
+	private synchronized byte[] attemptRead(boolean readBuf, byte[] buffer, int length){
+		
 		System.out.println("In attemptRead");
-		if ((length == 0) || ((bufLeft + length) > bufSize)) { // Control for bogus length of read 0
-			System.out.println("Reading too far or given length of zero. I can't believe you've done this.");
-			return;
+
+		if(readBuf){
+			if ((length == 0) || ((sendBufLeft + length) > sendBufSize)) { // Control for bogus length of read 0
+				System.out.println("Reading too far or given length of zero. I can't believe you've done this.");
+				return(null);
+			}
+
+			sendBufLeft += length; 
+			sendBuffer.copyOut(buffer, sendBuffer.getBase(), length);
+			sendBuffer.advance(length);
+			return(buffer);
+		}
+		else{
+			if ((length == 0) || ((recvBufLeft + length) > recvBufSize)) { // Control for bogus length of read 0
+				System.out.println("Reading too far or given length of zero. I can't believe you've done this.");
+				return(null);
+			}
+
+			recvBufLeft += length; 
+			recvBuffer.copyOut(buffer, recvBuffer.getBase(), length);
+			recvBuffer.advance(length);
+			return(buffer);
 		}
 
-		bufLeft += length; 
-		toRead.copyOut(buffer, toRead.getBase(), length);
-		toRead.advance(length);
-		return;
 	}
 
 	synchronized void sendData() {
@@ -281,8 +297,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 			if (packSize > (sendBufSize - sendBufLeft)){ packSize = (sendBufSize - sendBufLeft);}
 			if (packSize > (recvWindow - sentSpace)){ packSize = (recvWindow - sentSpace);}
 
-			byte[] payload = new byte[packSize];
-			attemptRead(sendBuffer, sendBufLeft, sendBufSize, payload, packSize);
+			byte[] passer = new byte[packSize];
+			byte[] payload = attemptRead(payload, packSize);
 
 			TCPPacket payloadPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, false, sendBufSize - sendBufLeft, payload);
 
@@ -320,7 +336,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			minReaderVal = length;
 		}
 
-		attemptRead(recvBuffer, recvBufLeft, recvBufSize, buffer, minReaderVal);
+		buffer = attemptRead(buffer, minReaderVal);
 
 		notifyAll();
 		return minReaderVal;
