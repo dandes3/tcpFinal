@@ -44,13 +44,20 @@ class StudentSocketImpl extends BaseSocketImpl {
 	private SocketReader reader;
 	private SocketWriter writer;
 	private boolean terminating = false;
+	private boolean pushed = false;
 
 	private InfiniteBuffer sendBuffer;
 	private InfiniteBuffer recvBuffer;
 
-	private int sendBuffer_fullness = 0;
+	private int sendBufLeft;
+	private int sendBufSize; 
 
+	private int recvBufLeft;
+	private int recvBufSize; 
+
+	private int recvWindow;
 	private int unAckPackTrack; 
+
 
 	StudentSocketImpl(Demultiplexer D) {  // default constructor
 		this.D = D;
@@ -200,34 +207,75 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * initialize buffers and set up sequence numbers
 	 */
 	private void initBuffers(){
+		// Buffers are made and trackers are set to keep endpoints on the current buffer size 
+		//  amount of space that is left to write to.
 		sendBuffer = new InfiniteBuffer();
+		sendBufSize = sendBuffer.getBufferSize();
+		sendBufLeft = sendBufSize;
+
 		recvBuffer = new InfiniteBuffer();
+		recvBufSize = recvBuffer.getBufferSize();
+		recvBufLeft = recvBufSize;
+	}
+
+	/**
+	 * Basically a nice little wrapper function that protects the inherently unsafe *infinite* circular buffer. 
+	 * Wraps all attempts at appending with a safety fallout if the buffer tries to circle around and overwrite. 
+	 */
+	private synchronized void attemptAppend(InfiniteBuffer toAppend, int bufLeft, int bufSize, byte[] buffer, int length){
+		if ((bufLeft - bufSize) < 0){
+			System.out.println("Buffer circled around, panic and throw stuff.");
+			return;
+		}
+
+		bufLeft -= length;
+		toAppend.append(buffer, 0, length);
+		return;
+	}
+
+	/**
+	 * Basically a nice little wrapper function that protects the inherently unsafe *infinite* circular buffer. 
+	 * Wraps all attempts at reading with a safety fallout if the buffer tries to read garbage data. 
+	 */
+	private synchronized void attemptRead(InfiniteBuffer toRead, int bufLeft, int bufSize, byte[] buffer, int length){
+		if ((length == 0) || ((bufLeft + length) > bufSize)) { // Control for bogus length of read 0
+			System.out.println("Reading too far or given length of zero. I can't believe you've done this.");
+			return;
+		}
+
+		bufLeft += length; 
+		toRead.copyOut(buffer, toRead.getBase(), length);
+		toRead.advance(length);
+		return;
 	}
 
 	synchronized void sendData() {
+		// TODO: Figure out how to set up a tracking space
 
-		/* not enough data to send a packet. TODO: let this be
-		 * overridden to flush buffer at close */
-		if (sendBuffer_fullness < data_bytes_per_packet)
-			return;
+		int sentSpace = -1;
+		if (recvWindow > 0){ sentSpace = 0;}
 
-		/* last packet wasn't acknowledged; don't send yet */
-		if ((last_packet_sent != null) && (seqNum == last_packet_sent.seqNum))
-			return;
+		while(unAckPackTrack <= 7 && ((sendBufSize - sendBufLeft) > 0) && sentSpace < recvWindow){
+			int packSize = 1000;
+			if (packSize > (sendBufSize - sendBufLeft)){ packSize = (sendBufSize - sendBufLeft);}
+			if (packSize > (recvWindow - sentSpace)){ packSize = (recvWindow - sentSpace);}
 
-		sendBuffer_fullness -= data_bytes_per_packet;
+			byte[] payload = new byte[packSize];
+			attemptRead(sendBuffer, sendBufLeft, sendBufSize, payload, packSize);
 
-		byte buf[] = new byte[data_bytes_per_packet];
-		sendBuffer.copyOut(buf, sendBuffer.getBase(), data_bytes_per_packet);
+			TCPPacket payloadPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, false, sendBufSize - sendBufLeft, payload);
 
-		last_packet_sent = new TCPPacket(localport, port, seqNum, ackNum,
-				true,	/* ack */
-				false,	/* syn */
-				false,	/* fin */
-				1000,	/* window size: TODO FIXME chosen arbitrarily */
-				);
+			sentSpace += packSize;
+			seqNum += packSize;
+			unAckPackTrack ++;
+			String plaintext = new String(payload);
 
-		sendPacket(last_packet_sent, false);
+			/** Please god work */
+			sendPacket(payloadPacket, false);
+
+		}
+		notifyAll();
+
 	}
 
 	/**
@@ -239,6 +287,20 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * @return number of bytes copied (by definition > 0)
 	 */
 	synchronized int getData(byte[] buffer, int length){
+		while ((recvBufSize - recvBufLeft) == 0){
+			try {wait();} 
+			catch (InterruptedException e){e.printStackTrace();}
+		}
+
+		int minReaderVal = recvBufSize - recvBufLeft; 
+		if (length < minReaderVal) {
+			minReaderVal = length;
+		}
+
+		attemptRead(recvBuffer, recvBufLeft, recvBufSize, buffer, minReaderVal);
+
+		notifyAll();
+		return minReaderVal;
 	}
 
 	/**
@@ -248,9 +310,15 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * @param length number of bytes to copy
 	 */
 	synchronized void dataFromApp(byte[] buffer, int length){
-		/* TODO FIXME: what happens when the sendBuffer becomes overfull? */
-		sendBuffer_fullness += length;
-		sendBuffer.append(buffer, 0, length);
+		while (sendBufLeft == 0){
+			try {wait();} 
+			catch (InterruptedException e){e.printStackTrace();}
+		}
+
+		attemptAppend(sendBuffer, sendBufLeft, sendBufSize, buffer, length);
+
+		if (terminating){pushed = true;}
+
 		sendData();
 	}
 
@@ -334,20 +402,20 @@ class StudentSocketImpl extends BaseSocketImpl {
 				changeToState(TIME_WAIT);
 
 			/* ACKed a data packet we sent */
-			} else if (last_packet_sent != null) {
-				int expected_next_seq = seqNum + last_packet_sent.getData();
+		    } //else if (last_packet_sent != null) {
+			// 	int expected_next_seq = seqNum + last_packet_sent.getData();
 
-				/* advance the buffer if we didn't lose the packet */
-				if (p.ackNum == expected_next_seq) {
-					seqNum = expected_next_seq;
-					sendBuffer.advance(last_packet_sent.getData());
-					sendData();
+			// 	/* advance the buffer if we didn't lose the packet */
+			// 	if (p.ackNum == expected_next_seq) {
+			// 		seqNum = expected_next_seq;
+			// 		sendBuffer.advance(last_packet_sent.getData());
+			// 		sendData();
 
-				/* resend the packet if it appears to have been lost */
-				} else {
-					sendPacket(last_packet_sent, true);
-				}
-			}
+			// 	/* resend the packet if it appears to have been lost */
+			// 	} else {
+			// 		sendPacket(last_packet_sent, true);
+			// 	}
+			// }
 		}
 		else if(p.synFlag == true){
 			System.out.println("a syn.");
