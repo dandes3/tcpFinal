@@ -379,6 +379,13 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 		attemptAppend(true, buffer, length);
 
+		buffer = attemptRead(true, buffer, length);
+		
+		// Throws gotten string at screen after decoding
+		String puller = new String(buffer);
+		System.out.println(puller);
+
+
 		System.out.println(sendBufLeft);
 
 		if (terminating){pushed = true;}
