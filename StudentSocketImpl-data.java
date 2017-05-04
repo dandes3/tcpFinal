@@ -222,17 +222,32 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * Basically a nice little wrapper function that protects the inherently unsafe *infinite* circular buffer. 
 	 * Wraps all attempts at appending with a safety fallout if the buffer tries to circle around and overwrite. 
 	 */
-	private synchronized void attemptAppend(InfiniteBuffer toAppend, int bufLeft, int bufSize, byte[] buffer, int length){
+	// private synchronized void attemptAppend(InfiniteBuffer toAppend, int bufLeft, int bufSize, byte[] buffer, int length){
+
+	// 	System.out.println("In attemptAppend");
+	// 	if ((bufLeft - bufSize) < 0){
+	// 		System.out.println("Buffer circled around, panic and throw stuff.");
+	// 		return;
+	// 	}
+
+	// 	bufLeft -= length;
+	// 	toAppend.append(buffer, 0, length);
+	// 	System.out.println(bufLeft);
+
+	// 	return;
+	// }
+
+	private synchronized void attemptAppend(byte[] buffer, int length){
+
 		System.out.println("In attemptAppend");
-		if ((bufLeft - bufSize) < 0){
+		if ((sendBufLeft - sendBufSize) < 0){
 			System.out.println("Buffer circled around, panic and throw stuff.");
 			return;
 		}
 
-		System.out.println("WTF");
-		bufLeft -= length;
-		toAppend.append(buffer, 0, length);
-		System.out.println(bufLeft);
+		sendBufLeft -= length;
+		sendBuffer.append(buffer, 0, length);
+		System.out.println(sendBufLeft);
 
 		return;
 	}
@@ -326,7 +341,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		}
 		System.out.println(sendBufLeft);
 
-		attemptAppend(sendBuffer, sendBufLeft, sendBufSize, buffer, length);
+		attemptAppend(buffer, length);
 
 		System.out.println(sendBufLeft);
 
