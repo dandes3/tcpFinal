@@ -371,6 +371,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, 1, null);
 				changeToState(ESTABLISHED);
 				sendPacket(ackPacket, false);
+				sendPacket(ackPacket, false);
 			}
 			else if (state == ESTABLISHED){
 				//client state, strange message due to packet loss
@@ -392,7 +393,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 				cancelPacketTimer();
 				changeToState(ESTABLISHED);
 				System.out.println("This is location 1");
-				return;
 			}
 			else if(state == FIN_WAIT_1){
 				//client state
