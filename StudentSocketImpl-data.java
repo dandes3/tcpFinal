@@ -346,11 +346,11 @@ class StudentSocketImpl extends BaseSocketImpl {
 		}
 
 		int minReaderVal = recvBufSize - recvBufLeft; 
-		// if (length < minReaderVal) {
-		// 	minReaderVal = length;
-		// }
+		if (length < minReaderVal) {
+			minReaderVal = length;
+		}
 
-		buffer = attemptRead(false, buffer, minReaderVal);
+		buffer = attemptRead(false, buffer, 5);
 		
 		// Throws gotten string at screen after decoding
 		String puller = new String(buffer);
