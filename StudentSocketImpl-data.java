@@ -223,6 +223,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * Wraps all attempts at appending with a safety fallout if the buffer tries to circle around and overwrite. 
 	 */
 	private synchronized void attemptAppend(InfiniteBuffer toAppend, int bufLeft, int bufSize, byte[] buffer, int length){
+		System.out.println("In attemptAppend");
 		if ((bufLeft - bufSize) < 0){
 			System.out.println("Buffer circled around, panic and throw stuff.");
 			return;
@@ -238,6 +239,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * Wraps all attempts at reading with a safety fallout if the buffer tries to read garbage data. 
 	 */
 	private synchronized void attemptRead(InfiniteBuffer toRead, int bufLeft, int bufSize, byte[] buffer, int length){
+		System.out.println("In attemptRead");
 		if ((length == 0) || ((bufLeft + length) > bufSize)) { // Control for bogus length of read 0
 			System.out.println("Reading too far or given length of zero. I can't believe you've done this.");
 			return;
@@ -251,6 +253,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 	synchronized void sendData() {
 		// TODO: Figure out how to set up a tracking space
+		System.out.println("In sendData");
 
 		int sentSpace = -1;
 		if (recvWindow > 0){ sentSpace = 0;}
@@ -288,6 +291,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * @return number of bytes copied (by definition > 0)
 	 */
 	synchronized int getData(byte[] buffer, int length){
+		System.out.println("In getData");
 		while ((recvBufSize - recvBufLeft) == 0){
 			try {wait();} 
 			catch (InterruptedException e){e.printStackTrace();}
