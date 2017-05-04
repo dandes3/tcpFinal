@@ -272,6 +272,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 			/** Please god work */
 			sendPacket(payloadPacket, false);
+			System.out.println("Attempted a packet send with data");
 
 		}
 		notifyAll();
