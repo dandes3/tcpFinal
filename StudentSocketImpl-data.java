@@ -237,19 +237,32 @@ class StudentSocketImpl extends BaseSocketImpl {
 	// 	return;
 	// }
 
-	private synchronized void attemptAppend(byte[] buffer, int length){
+	private synchronized void attemptAppend(boolean sendBuf, byte[] buffer, int length){
 
-		System.out.println("In attemptAppend");
-		if ((sendBufLeft - sendBufSize) < 0){
-			System.out.println("Buffer circled around, panic and throw stuff.");
+		if(sendBuf){
+			System.out.println("In attemptAppend send");
+			if ((sendBufLeft - sendBufSize) < 0){
+				System.out.println("Buffer circled around, panic and throw stuff.");
+				return;
+			}
+
+			sendBufLeft -= length;
+			sendBuffer.append(buffer, 0, length);
+			System.out.println(sendBufLeft);
 			return;
 		}
+		else{
+			System.out.println("In attemptAppend recv");
+			if ((recvBufLeft - recvBufSize) < 0){
+				System.out.println("Buffer circled around, panic and throw stuff.");
+				return;
+			}
 
-		sendBufLeft -= length;
-		sendBuffer.append(buffer, 0, length);
-		System.out.println(sendBufLeft);
-
-		return;
+			recvBufLeft -= length;
+			recvBuffer.append(buffer, 0, length);
+			System.out.println(recvBufLeft);
+			return;
+		}
 	}
 
 	/**
@@ -357,7 +370,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		}
 		System.out.println(sendBufLeft);
 
-		attemptAppend(buffer, length);
+		attemptAppend(true, buffer, length);
 
 		System.out.println(sendBufLeft);
 
@@ -533,6 +546,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		}
 		else{
 			System.out.println("a chunk of data.");
+			attemptAppend(false, p.data, p.data.length);
 		}
 	}
 
