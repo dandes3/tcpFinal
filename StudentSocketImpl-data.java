@@ -351,7 +351,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 		}
 
 		buffer = attemptRead(false, buffer, minReaderVal);
-		System.out.println(buffer);
+		String puller = new String(buffer);
+		System.out.println(puller);
 
 		notifyAll();
 		return minReaderVal;
