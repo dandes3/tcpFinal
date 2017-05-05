@@ -308,9 +308,15 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 		while(unAckPackTrack <= 7 && ((sendBufSize - sendBufLeft) > 0) && sentSpace < recvWindow){
 			int packSize = 1000;
+
+			System.out.print(packSize);
+			System.out.print(sendBufSize - sendBufLeft);
+			System.out.print(recvWindow - sentSpace);
+			
 			if (packSize > (sendBufSize - sendBufLeft)){ packSize = (sendBufSize - sendBufLeft);}
 			if (packSize > (recvWindow - sentSpace)){ packSize = (recvWindow - sentSpace);}
 
+			
 			System.out.print(packSize);
 
 			byte[] passer = new byte[packSize];
