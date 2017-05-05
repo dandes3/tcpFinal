@@ -252,32 +252,28 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * Basically a nice little wrapper function that protects the inherently unsafe *infinite* circular buffer.
 	 * Wraps all attempts at reading with a safety fallout if the buffer tries to read garbage data.
 	 */
-	private synchronized int attemptRead(boolean sendBuf, byte[] buffer, int length) {
-
+	private synchronized void attemptRead(boolean sendBuf, byte[] buffer, int length) {
 
 		if(sendBuf){
+
 			//System.out.println("In attemptRead send");
 			if ((length == 0) || ((sendBufLeft + length) > sendBufSize)) { // Control for bogus length of read 0
 				System.out.println("Reading too far or given length of zero. I can't believe you've done this.");
-				return(null);
 			}
 
 			sendBufLeft += length;
 			sendBuffer.copyOut(buffer, sendBuffer.getBase(), length);
 			sendBuffer.advance(length);
-			return(buffer);
 		}
 		else{
 			//System.out.println("In attemptRead recv");
 			if ((length == 0) || ((recvBufLeft + length) > recvBufSize)) { // Control for bogus length of read 0
 				System.out.println("Reading too far or given length of zero. I can't believe you've done this.");
-				return(null);
 			}
 
 			recvBufLeft += length;
 			recvBuffer.copyOut(buffer, recvBuffer.getBase(), length);
 			recvBuffer.advance(length);
-			return(buffer);
 		}
 
 	}
@@ -290,6 +286,18 @@ class StudentSocketImpl extends BaseSocketImpl {
 		if (recvWindow > 0){ sentSpace = 0;}
 
 		while(((sendBufSize - sendBufLeft) > 0) && sentSpace < recvWindow){
+			System.out.print("sendBufSize is ");
+			System.out.println(sendBufSize);
+
+			System.out.print("sendBufLeft is ");
+			System.out.println(sendBufLeft);
+
+			System.out.print("sentSpace is ");
+			System.out.println(sentSpace);
+
+			System.out.print("recvWindow is ");
+			System.out.println(recvWindow);
+
 			int packSize = data_bytes_per_packet;
 
 			//System.out.println(packSize);
@@ -303,7 +311,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			//System.out.println(packSize);
 
 			byte[] payload = new byte[packSize];
-			sendBufLeft += attemptRead(true, payload, packSize);
+			attemptRead(true, payload, packSize);
 
 			// Throws gotten string at screen after decoding
 			String puller = new String(payload);
@@ -347,7 +355,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 		//System.out.println(minReaderVal);
 
-		buffer = attemptRead(false, buffer, minReaderVal);
+		attemptRead(false, buffer, minReaderVal);
 
 		// Throws gotten string at screen after decoding
 		String puller = new String(buffer);
