@@ -452,18 +452,18 @@ class StudentSocketImpl extends BaseSocketImpl {
 				//client state
 				incrementCounters(p);
 				cancelPacketTimer();
-				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, 1, null);
+				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, sendBufSize - sendBufLeft, null);
 				changeToState(ESTABLISHED);
 				sendPacket(ackPacket, false);
 			}
 			else if (state == ESTABLISHED){
 				//client state, strange message due to packet loss
-				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, 1, null);
+				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, sendBufSize - sendBufLeft, null);
 				sendPacket(ackPacket, false);
 			}
 			else if (state == FIN_WAIT_1){
 				//client state, strange message due to packet loss
-				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, 1, null);
+				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, sendBufSize - sendBufLeft, null);
 				sendPacket(ackPacket, false);
 			}
 		}
@@ -525,7 +525,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 				this.port = p.sourcePort;
 
 				incrementCounters(p);
-				TCPPacket synackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, true, false, 1, null);
+				TCPPacket synackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, true, false, sendBufSize - sendBufLeft, null);
 				changeToState(SYN_RCVD);
 				sendPacket(synackPacket, false);
 			}
@@ -537,37 +537,37 @@ class StudentSocketImpl extends BaseSocketImpl {
 			if(state == ESTABLISHED){
 				//server state
 				incrementCounters(p);
-				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, 1, null);
+				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, sendBufSize - sendBufLeft, null);
 				changeToState(CLOSE_WAIT);
 				sendPacket(ackPacket, false);
 			}
 			else if(state == FIN_WAIT_1){
 				//client state or server state
 				incrementCounters(p);
-				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, 1, null);
+				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, sendBufSize - sendBufLeft, null);
 				changeToState(CLOSING);
 				sendPacket(ackPacket, false);
 			}
 			else if(state == FIN_WAIT_2){
 				//client state
 				incrementCounters(p);
-				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, 1, null);
+				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, sendBufSize - sendBufLeft, null);
 				changeToState(TIME_WAIT);
 				sendPacket(ackPacket, false);
 			}
 			else if(state == LAST_ACK){
 				//server state, strange message due to packet loss
-				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, 1, null);
+				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, sendBufSize - sendBufLeft, null);
 				sendPacket(ackPacket, false);
 			}
 			else if(state == CLOSING){
 				//client or server state, strange message due to packet loss
-				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, 1, null);
+				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, sendBufSize - sendBufLeft, null);
 				sendPacket(ackPacket, false);
 			}
 			else if(state == TIME_WAIT){
 				//client or server state, strange message due to packet loss
-				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, 1, null);
+				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, sendBufSize - sendBufLeft, null);
 				sendPacket(ackPacket, false);
 			}
 		}
@@ -658,14 +658,14 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 		if(state == ESTABLISHED){
 			//client state
-			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, true, 1, null);
+			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, true, sendBufSize - sendBufLeft, null);
 			changeToState(FIN_WAIT_1);
 			sendPacket(finPacket, false);
 			finSent = true;
 		}
 		else if(state == CLOSE_WAIT){
 			//server state
-			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, true, 1, null);
+			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, true, sendBufSize - sendBufLeft, null);
 			changeToState(LAST_ACK);
 			sendPacket(finPacket, false);
 			finSent = true;
