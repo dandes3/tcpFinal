@@ -240,7 +240,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 	private synchronized void attemptAppend(boolean sendBuf, byte[] buffer, int length){
 
 		if(sendBuf){
-			System.out.println("In attemptAppend send");
+			//System.out.println("In attemptAppend send");
 			if ((sendBufLeft - sendBufSize) < 0){
 				System.out.println("Buffer circled around, panic and throw stuff.");
 				return;
@@ -248,11 +248,11 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 			sendBufLeft -= length;
 			sendBuffer.append(buffer, 0, length);
-			System.out.println(sendBufLeft);
+			//System.out.println(sendBufLeft);
 			return;
 		}
 		else{
-			System.out.println("In attemptAppend recv");
+			//System.out.println("In attemptAppend recv");
 			if ((recvBufLeft - recvBufSize) < 0){
 				System.out.println("Buffer circled around, panic and throw stuff.");
 				return;
@@ -260,7 +260,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 			recvBufLeft -= length;
 			recvBuffer.append(buffer, 0, length);
-			System.out.println(recvBufLeft);
+			//System.out.println(recvBufLeft);
 			return;
 		}
 	}
@@ -273,7 +273,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		
 		
 		if(sendBuf){
-			System.out.println("In attemptRead send");
+			//System.out.println("In attemptRead send");
 			if ((length == 0) || ((sendBufLeft + length) > sendBufSize)) { // Control for bogus length of read 0
 				System.out.println("Reading too far or given length of zero. I can't believe you've done this.");
 				return(null);
@@ -285,7 +285,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			return(buffer);
 		}
 		else{
-			System.out.println("In attemptRead recv");
+			//System.out.println("In attemptRead recv");
 			if ((length == 0) || ((recvBufLeft + length) > recvBufSize)) { // Control for bogus length of read 0
 				System.out.println("Reading too far or given length of zero. I can't believe you've done this.");
 				return(null);
@@ -301,7 +301,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 	synchronized void sendData() {
 		// TODO: Figure out how to set up a tracking space
-		System.out.println("In sendData");
+		//System.out.println("In sendData");
 
 		int sentSpace = -1;
 		if (recvWindow > 0){ sentSpace = 0;}
@@ -309,23 +309,23 @@ class StudentSocketImpl extends BaseSocketImpl {
 		while(unAckPackTrack <= 7 && ((sendBufSize - sendBufLeft) > 0) && sentSpace < recvWindow){
 			int packSize = 1000;
 
-			System.out.println(packSize);
-			System.out.println(sendBufSize - sendBufLeft);
-			System.out.println(recvWindow - sentSpace);
+			//System.out.println(packSize);
+			//System.out.println(sendBufSize - sendBufLeft);
+			//System.out.println(recvWindow - sentSpace);
 
 			if (packSize > (sendBufSize - sendBufLeft)){ packSize = (sendBufSize - sendBufLeft);}
 			//if (packSize > (recvWindow - sentSpace)){ packSize = (recvWindow - sentSpace);}
 
 			
-			System.out.println(packSize);
+			//System.out.println(packSize);
 
 			byte[] passer = new byte[packSize];
 			byte[] payload = attemptRead(true, passer, packSize);
 		
 			// Throws gotten string at screen after decoding
 			String puller = new String(payload);
-			System.out.println("This is the string being inserted into the packet");
-			System.out.println(puller);
+			//System.out.println("This is the string being inserted into the packet");
+			//System.out.println(puller);
 
 			TCPPacket payloadPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, false, recvBufLeft, payload);
 
@@ -336,7 +336,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 			/** Please god work */
 			sendPacket(payloadPacket, false);
-			System.out.println("Attempted a packet send with data");
+			//System.out.println("Attempted a packet send with data");
 
 		}
 		notifyAll();
@@ -352,7 +352,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * @return number of bytes copied (by definition > 0)
 	 */
 	synchronized int getData(byte[] buffer, int length){
-		System.out.println("In getData");
+		//System.out.println("In getData");
 		while ((recvBufSize - recvBufLeft) == 0){
 			try {wait();} 
 			catch (InterruptedException e){e.printStackTrace();}
@@ -363,13 +363,13 @@ class StudentSocketImpl extends BaseSocketImpl {
 			minReaderVal = length;
 		}
 
-		System.out.println(minReaderVal);
+		//System.out.println(minReaderVal);
 
 		buffer = attemptRead(false, buffer, minReaderVal);
 		
 		// Throws gotten string at screen after decoding
 		String puller = new String(buffer);
-		System.out.println(puller);
+		//System.out.println(puller);
 
 		notifyAll();
 		return minReaderVal;
@@ -382,13 +382,13 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * @param length number of bytes to copy
 	 */
 	synchronized void dataFromApp(byte[] buffer, int length){
-		System.out.println("In dataFromApp");
+		//System.out.println("In dataFromApp");
 		while (sendBufLeft == 0){
-			System.out.println("In dataFromApp wait loop");
+			//System.out.println("In dataFromApp wait loop");
 			try {wait();} 
 			catch (InterruptedException e){e.printStackTrace();}
 		}
-		System.out.println(sendBufLeft);
+		//System.out.println(sendBufLeft);
 
 		attemptAppend(true, buffer, length);
 
@@ -399,7 +399,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		//System.out.println(puller);
 
 
-		System.out.println(sendBufLeft);
+		//System.out.println(sendBufLeft);
 
 		if (terminating){pushed = true;}
 
@@ -433,7 +433,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * @param p The packet that arrived
 	 */
 	public synchronized void receivePacket(TCPPacket p){
-		System.out.println("Running receivePacket again");
+		//System.out.println("Running receivePacket again");
 
 		this.notifyAll();
 		recvWindow = p.windowSize;
@@ -475,7 +475,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 				//server state
 				cancelPacketTimer();
 				changeToState(ESTABLISHED);
-				System.out.println("This is location 1");
+				//System.out.println("This is location 1");
 			}
 			else if(state == FIN_WAIT_1){
 				//client state
