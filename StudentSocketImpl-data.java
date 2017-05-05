@@ -423,7 +423,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		D.registerConnection(address, localport, port, this);
 
 		seqNum = 100;
-		TCPPacket synPacket = new TCPPacket(localport, port, seqNum, ackNum, false, true, false, 1, null);
+		TCPPacket synPacket = new TCPPacket(localport, port, seqNum, ackNum, false, true, false, sendBufSize - sendBufLeft, null);
 		changeToState(SYN_SENT);
 		sendPacket(synPacket, false);
 	}
