@@ -476,10 +476,34 @@ class StudentSocketImpl extends BaseSocketImpl {
 				//client or server state
 				cancelPacketTimer();
 				changeToState(TIME_WAIT);
+		    } 
+		    else if(state == ESTABLISHED){
+		    	int numAcked = 0;
+				Vector<Integer> toRemove = new Vector<Integer>();
+				if (dataTimers.containsKey(p.ackNum)){
+					for (int conNum : dataTimers.keySet()){
+						if (conNum <= p.ackNum){
+							dataTimers.get(conNum).cancel();
+							toRemove.add(conNum);
+							numAcked++;
+						}
+					}	
+					
+					for (int conNum : toRemove)
+						dataTimers.remove(conNum);						
+					
+				}
+					
+				unAckPackTrack -= numAcked;
+				sendData();
+		    }
 
 
-			/* ACKed a data packet we sent */
-		    } //else if (last_packet_sent != null) {
+		    /* ACKed a data packet we sent */
+
+
+
+		    //else if (last_packet_sent != null) {
 			// 	int expected_next_seq = seqNum + last_packet_sent.getData();
 
 			// 	/* advance the buffer if we didn't lose the packet */
@@ -562,7 +586,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			attemptAppend(false, p.data, p.data.length);
 
 			ackNum += p.data.length;
-			
+
             TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
 			sendPacket(ackPacket, false);
 
