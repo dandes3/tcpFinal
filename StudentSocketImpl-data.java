@@ -561,8 +561,13 @@ class StudentSocketImpl extends BaseSocketImpl {
 			System.out.println("a chunk of data.");
 			attemptAppend(false, p.data, p.data.length);
 
-			String puller = new String(p.data);
-		    System.out.println(puller);
+			ackNum += p.data.length;
+			
+            TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
+			sendPacket(ackPacket, false);
+
+			//String puller = new String(p.data);
+		    //System.out.println(puller);
 		}
 	}
 
