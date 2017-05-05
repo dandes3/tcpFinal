@@ -50,19 +50,17 @@ class StudentSocketImpl extends BaseSocketImpl {
 	private InfiniteBuffer recvBuffer;
 
 	private int sendBufLeft;
-	private int sendBufSize; 
+	private int sendBufSize;
 
 	private int recvBufLeft;
-	private int recvBufSize; 
+	private int recvBufSize;
 
 	private int recvWindow;
-	private int unAckPackTrack; 
 
 
 	StudentSocketImpl(Demultiplexer D) {  // default constructor
 		this.D = D;
 		state = CLOSED;
-		unAckPackTrack = 0;
 		seqNum = -1;
 		ackNum = -1;
 		timerList = new Hashtable<Integer, TCPTimerTask>();
@@ -207,7 +205,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * initialize buffers and set up sequence numbers
 	 */
 	private void initBuffers(){
-		// Buffers are made and trackers are set to keep endpoints on the current buffer size 
+		// Buffers are made and trackers are set to keep endpoints on the current buffer size
 		//  amount of space that is left to write to.
 		sendBuffer = new InfiniteBuffer();
 		sendBufSize = sendBuffer.getBufferSize();
@@ -219,8 +217,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 	}
 
 	/**
-	 * Basically a nice little wrapper function that protects the inherently unsafe *infinite* circular buffer. 
-	 * Wraps all attempts at appending with a safety fallout if the buffer tries to circle around and overwrite. 
+	 * Basically a nice little wrapper function that protects the inherently unsafe *infinite* circular buffer.
+	 * Wraps all attempts at appending with a safety fallout if the buffer tries to circle around and overwrite.
 	 */
 	private synchronized void attemptAppend(boolean sendBuf, byte[] buffer, int length){
 
@@ -251,12 +249,12 @@ class StudentSocketImpl extends BaseSocketImpl {
 	}
 
 	/**
-	 * Basically a nice little wrapper function that protects the inherently unsafe *infinite* circular buffer. 
-	 * Wraps all attempts at reading with a safety fallout if the buffer tries to read garbage data. 
+	 * Basically a nice little wrapper function that protects the inherently unsafe *infinite* circular buffer.
+	 * Wraps all attempts at reading with a safety fallout if the buffer tries to read garbage data.
 	 */
-	private synchronized byte[] attemptRead(boolean sendBuf, byte[] buffer, int length){
-		
-		
+	private synchronized int attemptRead(boolean sendBuf, byte[] buffer, int length) {
+
+
 		if(sendBuf){
 			//System.out.println("In attemptRead send");
 			if ((length == 0) || ((sendBufLeft + length) > sendBufSize)) { // Control for bogus length of read 0
@@ -264,7 +262,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 				return(null);
 			}
 
-			sendBufLeft += length; 
+			sendBufLeft += length;
 			sendBuffer.copyOut(buffer, sendBuffer.getBase(), length);
 			sendBuffer.advance(length);
 			return(buffer);
@@ -276,7 +274,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 				return(null);
 			}
 
-			recvBufLeft += length; 
+			recvBufLeft += length;
 			recvBuffer.copyOut(buffer, recvBuffer.getBase(), length);
 			recvBuffer.advance(length);
 			return(buffer);
@@ -291,8 +289,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 		int sentSpace = -1;
 		if (recvWindow > 0){ sentSpace = 0;}
 
-		while(unAckPackTrack <= 7 && ((sendBufSize - sendBufLeft) > 0) && sentSpace < recvWindow){
-			int packSize = 1000;
+		while(((sendBufSize - sendBufLeft) > 0) && sentSpace < recvWindow){
+			int packSize = data_bytes_per_packet;
 
 			//System.out.println(packSize);
 			//System.out.println(sendBufSize - sendBufLeft);
@@ -301,12 +299,12 @@ class StudentSocketImpl extends BaseSocketImpl {
 			if (packSize > (sendBufSize - sendBufLeft)){ packSize = (sendBufSize - sendBufLeft);}
 			//if (packSize > (recvWindow - sentSpace)){ packSize = (recvWindow - sentSpace);}
 
-			
+
 			//System.out.println(packSize);
 
-			byte[] passer = new byte[packSize];
-			byte[] payload = attemptRead(true, passer, packSize);
-		
+			byte[] payload = new byte[packSize];
+			sendBufLeft += attemptRead(true, payload, packSize);
+
 			// Throws gotten string at screen after decoding
 			String puller = new String(payload);
 			//System.out.println("This is the string being inserted into the packet");
@@ -316,7 +314,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 			sentSpace += packSize;
 			seqNum += packSize;
-			unAckPackTrack ++;
 			String plaintext = new String(payload);
 
 			/** Please god work */
@@ -339,11 +336,11 @@ class StudentSocketImpl extends BaseSocketImpl {
 	synchronized int getData(byte[] buffer, int length){
 		//System.out.println("In getData");
 		while ((recvBufSize - recvBufLeft) == 0){
-			try {wait();} 
+			try {wait();}
 			catch (InterruptedException e){e.printStackTrace();}
 		}
 
-		int minReaderVal = recvBufSize - recvBufLeft; 
+		int minReaderVal = recvBufSize - recvBufLeft;
 		if (length < minReaderVal) {
 			minReaderVal = length;
 		}
@@ -351,7 +348,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		//System.out.println(minReaderVal);
 
 		buffer = attemptRead(false, buffer, minReaderVal);
-		
+
 		// Throws gotten string at screen after decoding
 		String puller = new String(buffer);
 		//System.out.println(puller);
@@ -370,7 +367,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		//System.out.println("In dataFromApp");
 		while (sendBufLeft == 0){
 			//System.out.println("In dataFromApp wait loop");
-			try {wait();} 
+			try {wait();}
 			catch (InterruptedException e){e.printStackTrace();}
 		}
 		//System.out.println(sendBufLeft);
@@ -378,7 +375,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		attemptAppend(true, buffer, length);
 
 		//buffer = attemptRead(true, buffer, length);
-		
+
 		// Throws gotten string at screen after decoding
 		//String puller = new String(buffer);
 		//System.out.println(puller);
@@ -476,7 +473,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 				//client or server state
 				cancelPacketTimer();
 				changeToState(TIME_WAIT);
-		    } 
+		    }
 		    else if(state == ESTABLISHED){
 		    	int numAcked = 0;
 
