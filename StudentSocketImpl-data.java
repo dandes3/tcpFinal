@@ -222,21 +222,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * Basically a nice little wrapper function that protects the inherently unsafe *infinite* circular buffer. 
 	 * Wraps all attempts at appending with a safety fallout if the buffer tries to circle around and overwrite. 
 	 */
-	// private synchronized void attemptAppend(InfiniteBuffer toAppend, int bufLeft, int bufSize, byte[] buffer, int length){
-
-	// 	System.out.println("In attemptAppend");
-	// 	if ((bufLeft - bufSize) < 0){
-	// 		System.out.println("Buffer circled around, panic and throw stuff.");
-	// 		return;
-	// 	}
-
-	// 	bufLeft -= length;
-	// 	toAppend.append(buffer, 0, length);
-	// 	System.out.println(bufLeft);
-
-	// 	return;
-	// }
-
 	private synchronized void attemptAppend(boolean sendBuf, byte[] buffer, int length){
 
 		if(sendBuf){
@@ -491,6 +476,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 				//client or server state
 				cancelPacketTimer();
 				changeToState(TIME_WAIT);
+				
 
 			/* ACKed a data packet we sent */
 		    } //else if (last_packet_sent != null) {
