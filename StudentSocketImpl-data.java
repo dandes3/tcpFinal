@@ -314,7 +314,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			System.out.println(recvWindow - sentSpace);
 
 			if (packSize > (sendBufSize - sendBufLeft)){ packSize = (sendBufSize - sendBufLeft);}
-			if (packSize > (recvWindow - sentSpace)){ packSize = (recvWindow - sentSpace);}
+			//if (packSize > (recvWindow - sentSpace)){ packSize = (recvWindow - sentSpace);}
 
 			
 			System.out.println(packSize);
