@@ -341,7 +341,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * @param length number of bytes to copy
 	 */
 	synchronized void dataFromApp(byte[] buffer, int length){
-		while (sendBufLeft == 0){
+		while (state != ESTABLISHED || sendBufLeft == 0){
 			try {wait();}
 			catch (InterruptedException e){e.printStackTrace();}
 		}
@@ -394,7 +394,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			return;
 		}
 
-		if(p.ackFlag && p.synFlag){
+		if (p.ackFlag && p.synFlag){
 			System.out.println("a syn-ack.");
 
 			if(state == SYN_SENT){
