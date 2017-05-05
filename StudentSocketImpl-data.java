@@ -479,24 +479,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 		    } 
 		    else if(state == ESTABLISHED){
 		    	int numAcked = 0;
-				Vector<Integer> toRemove = new Vector<Integer>();
-				if (dataTimers.containsKey(p.ackNum)){
-					for (int conNum : dataTimers.keySet()){
-						if (conNum <= p.ackNum){
-							dataTimers.get(conNum).cancel();
-							toRemove.add(conNum);
-							numAcked++;
-						}
-					}	
-					
-					for (int conNum : toRemove)
-						dataTimers.remove(conNum);						
-					
-				}
-					
-				unAckPackTrack -= numAcked;
-				sendData();
-		    }
+
+		    	// Maybe try a new timerlist to track here instead of old one
 
 
 		    /* ACKed a data packet we sent */
