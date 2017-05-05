@@ -476,7 +476,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 				//client or server state
 				cancelPacketTimer();
 				changeToState(TIME_WAIT);
-				
+
 
 			/* ACKed a data packet we sent */
 		    } //else if (last_packet_sent != null) {
@@ -560,6 +560,9 @@ class StudentSocketImpl extends BaseSocketImpl {
 		else{
 			System.out.println("a chunk of data.");
 			attemptAppend(false, p.data, p.data.length);
+
+			String puller = new String(p.data);
+		    System.out.println(puller);
 		}
 	}
 
