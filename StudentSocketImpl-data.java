@@ -501,6 +501,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			// 		sendPacket(last_packet_sent, true);
 			// 	}
 			// }
+		    }
 		}
 		else if(p.synFlag == true){
 			System.out.println("a syn.");
