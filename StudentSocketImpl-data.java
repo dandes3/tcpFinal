@@ -139,9 +139,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 	}
 
 	private synchronized void sendPacket(TCPPacket inPacket, boolean resend){
-		if(inPacket.ackFlag == true && inPacket.synFlag == false){
-			inPacket.seqNum = -2;
-		}
+		last_packet_sent = inPacket;
 
 		if (resend) {
 			//the packet is for resending, and requires the original state as the key
@@ -279,44 +277,18 @@ class StudentSocketImpl extends BaseSocketImpl {
 	}
 
 	synchronized void sendData() {
-		// TODO: Figure out how to set up a tracking space
-		//System.out.println("In sendData");
+		System.out.println("In sendData");
 
 		int sentSpace = -1;
 		if (recvWindow > 0){ sentSpace = 0;}
 
 		while(((sendBufSize - sendBufLeft) > 0) && sentSpace < recvWindow){
-			System.out.print("sendBufSize is ");
-			System.out.println(sendBufSize);
-
-			System.out.print("sendBufLeft is ");
-			System.out.println(sendBufLeft);
-
-			System.out.print("sentSpace is ");
-			System.out.println(sentSpace);
-
-			System.out.print("recvWindow is ");
-			System.out.println(recvWindow);
 
 			int packSize = data_bytes_per_packet;
-
-			//System.out.println(packSize);
-			//System.out.println(sendBufSize - sendBufLeft);
-			//System.out.println(recvWindow - sentSpace);
-
 			if (packSize > (sendBufSize - sendBufLeft)){ packSize = (sendBufSize - sendBufLeft);}
-			//if (packSize > (recvWindow - sentSpace)){ packSize = (recvWindow - sentSpace);}
-
-
-			//System.out.println(packSize);
 
 			byte[] payload = new byte[packSize];
 			attemptRead(true, payload, packSize);
-
-			// Throws gotten string at screen after decoding
-			String puller = new String(payload);
-			//System.out.println("This is the string being inserted into the packet");
-			//System.out.println(puller);
 
 			TCPPacket payloadPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, false, recvBufLeft, payload);
 
@@ -324,13 +296,12 @@ class StudentSocketImpl extends BaseSocketImpl {
 			seqNum += packSize;
 			String plaintext = new String(payload);
 
-			/** Please god work */
+			/* Please god work */
 			sendPacket(payloadPacket, false);
-			//System.out.println("Attempted a packet send with data");
-
 		}
 		notifyAll();
 
+		System.out.println("Out of sendData");
 	}
 
 	/**
@@ -342,7 +313,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * @return number of bytes copied (by definition > 0)
 	 */
 	synchronized int getData(byte[] buffer, int length){
-		//System.out.println("In getData");
+		System.out.println("In getData");
+
 		while ((recvBufSize - recvBufLeft) == 0){
 			try {wait();}
 			catch (InterruptedException e){e.printStackTrace();}
@@ -353,15 +325,12 @@ class StudentSocketImpl extends BaseSocketImpl {
 			minReaderVal = length;
 		}
 
-		//System.out.println(minReaderVal);
-
 		attemptRead(false, buffer, minReaderVal);
 
-		// Throws gotten string at screen after decoding
-		String puller = new String(buffer);
-		//System.out.println(puller);
-
 		notifyAll();
+
+		System.out.println("leaving getData");
+
 		return minReaderVal;
 	}
 
@@ -372,24 +341,12 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * @param length number of bytes to copy
 	 */
 	synchronized void dataFromApp(byte[] buffer, int length){
-		//System.out.println("In dataFromApp");
 		while (sendBufLeft == 0){
-			//System.out.println("In dataFromApp wait loop");
 			try {wait();}
 			catch (InterruptedException e){e.printStackTrace();}
 		}
-		//System.out.println(sendBufLeft);
 
 		attemptAppend(true, buffer, length);
-
-		//buffer = attemptRead(true, buffer, length);
-
-		// Throws gotten string at screen after decoding
-		//String puller = new String(buffer);
-		//System.out.println(puller);
-
-
-		//System.out.println(sendBufLeft);
 
 		if (terminating){pushed = true;}
 
@@ -435,8 +392,11 @@ class StudentSocketImpl extends BaseSocketImpl {
 		//	if (state == ESTABLISHED){ sendData();}
 		//}
 
-		if(p.ackFlag == true && p.synFlag == true){
+		if(p.ackFlag && p.synFlag){
 			System.out.println("a syn-ack.");
+
+			ackNum = p.seqNum + 1;
+			seqNum++;
 
 			if(state == SYN_SENT){
 				//client state
@@ -457,7 +417,17 @@ class StudentSocketImpl extends BaseSocketImpl {
 				sendPacket(ackPacket, false);
 			}
 		}
-		else if(p.ackFlag == true){
+		else if(p.ackFlag){
+
+			if (ackNum != p.seqNum) {
+				if (last_packet_sent != null)
+					sendPacket(last_packet_sent, true);
+				return;
+			}
+
+			ackNum = p.seqNum + 1;
+			seqNum++;
+
 			System.out.println("an ack.");
 			//for the love of God, do not incrementCounters(p) in here
 
@@ -508,10 +478,13 @@ class StudentSocketImpl extends BaseSocketImpl {
 			// }
 		    }
 		}
-		else if(p.synFlag == true){
+		else if(p.synFlag){
 			System.out.println("a syn.");
 
 			if(state == LISTEN){
+				ackNum = p.seqNum + 1;
+				seqNum = 9000;
+
 				//server state
 				try{
 					D.unregisterListeningSocket(localport, this);	                     //***********tricky*************
@@ -531,7 +504,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			}
 
 		}
-		else if(p.finFlag == true){
+		else if(p.finFlag){
 			System.out.println("a fin.");
 
 			if(state == ESTABLISHED){
@@ -577,7 +550,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 			ackNum += p.data.length;
 
-            TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
+			TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
 			sendPacket(ackPacket, false);
 
 			//String puller = new String(p.data);
