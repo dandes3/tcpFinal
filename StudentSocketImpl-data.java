@@ -10,14 +10,13 @@ class StudentSocketImpl extends BaseSocketImpl {
 	//   protected int localport;
 
 	private Demultiplexer D;
+
+	/* one monolithic timer, just for scheduling resends of last_packet_sent and the close */
 	private Timer tcpTimer;
 
 	private int state;
 	private int seqNum;
 	private int ackNum;
-	private Hashtable<Integer, TCPTimerTask> timerList; //holds the timers for sent packets
-	private Hashtable<Integer, TCPPacket> packetList;	  //holds the packets associated with each timer
-	//(for timer identification)
 	private boolean wantsToClose = false;
 	private boolean finSent = false;
 
@@ -35,7 +34,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 	static final int data_bytes_per_packet = 1000;
 
-	private TCPPacket last_packet_sent = null;
+	public TCPPacket last_packet_sent = null;
 
 	private PipedOutputStream appOS;
 	private PipedInputStream appIS;
@@ -64,8 +63,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 		state = CLOSED;
 		seqNum = 0;
 		ackNum = 0;
-		timerList = new Hashtable<Integer, TCPTimerTask>();
-		packetList = new Hashtable<Integer, TCPPacket>();
+
+		tcpTimer = new Timer(false);
 
 		try {
 			pipeAppToSocket = new PipedInputStream();
@@ -125,25 +124,29 @@ class StudentSocketImpl extends BaseSocketImpl {
 	}
 
 	private synchronized void changeToState(int newState){
-		if (newState == state)
-			return;
-
 		System.out.println("!!! " + stateString(state) + "->" + stateString(newState));
 		state = newState;
 
-		if(newState == CLOSE_WAIT && wantsToClose && !finSent){
+		if (newState == CLOSE_WAIT && wantsToClose && !finSent){
 			try{
 				close();
 			}
-			catch(IOException ioe){}
-		}
-		else if(newState == TIME_WAIT){
-			createTimerTask(3000, null);
+			catch(IOException ioe){
+				System.out.println("close failed on socket");
+			}
+		} else if (newState == TIME_WAIT) {
+			last_packet_sent = null;
+			tcpTimer.cancel();
+			tcpTimer = new Timer(false);
+			tcpTimer.schedule(new SocketTimerTask(this), 3000);
 		}
 		notifyAll();
 	}
 
-	private synchronized void sendPacket(TCPPacket inPacket, boolean resend){
+	private synchronized void sendPacket(TCPPacket inPacket) {
+		tcpTimer.cancel();
+		tcpTimer = new Timer(false);
+
 		if (inPacket == null)
 			inPacket = last_packet_sent;
 		else
@@ -154,59 +157,15 @@ class StudentSocketImpl extends BaseSocketImpl {
 			awaiting_ack = true;
 		}
 
-		if (resend) {
-			//the packet is for resending, and requires the original state as the key
-			Enumeration keyList = timerList.keys();
-			Integer currKey = new Integer(-1);
-
-			try {
-				for(int i = 0; i<10; i++){
-					currKey = (Integer)keyList.nextElement();
-
-					if(packetList.get(currKey) == inPacket){
-						System.out.println("Recreating TimerTask from state " + stateString(currKey));
-						TCPWrapper.send(inPacket, address);
-						timerList.put(currKey,createTimerTask(1000, inPacket));
-						break;
-					}
-				}
-			}
-			catch(NoSuchElementException nsee){
-			}
-
-			return;
-		}
-
-		// new timer, and requires the current state as a key
 		TCPWrapper.send(inPacket, address);
 
-		// only do timers for syns, acks, fins, and data packets
-		if((inPacket.synFlag && !inPacket.ackFlag) || inPacket.ackFlag || inPacket.finFlag || inPacket.data != null){
-			System.out.println("Creating new TimerTask at state " + stateString(state));
-			timerList.put(new Integer(state),createTimerTask(1000, inPacket));
-			packetList.put(new Integer(state), inPacket);
-		}
-	}
+		if (state == TIME_WAIT) {
+			last_packet_sent = null;
+			tcpTimer.schedule(new SocketTimerTask(this), 3000);
 
-	private synchronized void cancelPacketTimer(){
-		//must be called before changeToState is called!!!
-		//System.out.println("cancelling timers");
-
-		try {
-			if(state != CLOSING){
-				timerList.get(state).cancel();
-				timerList.remove(state);
-				packetList.remove(state);
-			}
-			else{
-				//the only time the state changes before an ack is received... so it must
-				//look back to where the fin timer started
-				timerList.get(FIN_WAIT_1).cancel();
-				timerList.remove(FIN_WAIT_1);
-				packetList.remove(FIN_WAIT_1);
-			}
-		} catch (NullPointerException e) {
-			;
+		// only do timers for syns, fins, and data packets
+		} else if ((inPacket.synFlag && !inPacket.ackFlag) || inPacket.finFlag || (inPacket.data != null)) {
+			tcpTimer.schedule(new SocketTimerTask(this), 1000);
 		}
 	}
 
@@ -304,7 +263,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			sentSpace += packSize;
 
 			TCPPacket payloadPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, false, recvBufLeft, payload);
-			sendPacket(payloadPacket, false);
+			sendPacket(payloadPacket);
 
 			seqNum += packSize;
 			notifyAll();
@@ -383,7 +342,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		seqNum = 100;
 		TCPPacket synPacket = new TCPPacket(localport, port, seqNum, ackNum, false, true, false, recvBufLeft, null);
 		changeToState(SYN_SENT);
-		sendPacket(synPacket, false);
+		sendPacket(synPacket);
 		seqNum += 1;
 	}
 
@@ -403,15 +362,23 @@ class StudentSocketImpl extends BaseSocketImpl {
 		/* data received, send an ACK */
 		if (p.data != null) {
 
+			System.out.println("a packet of data");
+
 			if (state != SYN_RCVD && state != ESTABLISHED) {
-				//System.out.println("unexpected data packet!");
+				System.out.println("unexpected data packet!");
 				return;
 			}
 
-			System.out.println("a packet of data");
-
-			cancelPacketTimer();
 			changeToState(ESTABLISHED);
+
+			if (p.seqNum != ackNum) {
+				System.out.println("data packet's seqNum wasn't what we expected (" + ackNum + ")");
+				if (p.seqNum < ackNum)
+					System.out.println("it looks like our last ACK was dropped");
+				System.out.println("resending last ACK");
+				sendPacket(null);
+				return;
+			}
 
 			attemptAppend(false, p.data, p.data.length);
 
@@ -419,7 +386,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			ackNum = p.seqNum + p.data.length;
 
 			TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
-			sendPacket(ackPacket, false);
+			sendPacket(ackPacket);
 
 			return;
 		}
@@ -432,33 +399,31 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 				ackNum = p.seqNum + 1;
 
-				cancelPacketTimer();
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
 				changeToState(ESTABLISHED);
-				sendPacket(ackPacket, false);
+				sendPacket(ackPacket);
 			}
 			else if (state == ESTABLISHED){
 				//client state, strange message due to packet loss
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
-				sendPacket(ackPacket, false);
+				sendPacket(ackPacket);
 			}
 			else if (state == FIN_WAIT_1){
 				//client state, strange message due to packet loss
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
-				sendPacket(ackPacket, false);
+				sendPacket(ackPacket);
 			}
 		}
 		else if(p.ackFlag){
+			cancel_resend();
 
 			System.out.println("an ack.");
-
-			cancelPacketTimer();
 
 			if (p.seqNum != ackNum || p.ackNum != seqNum) {
 				//System.out.println("ack number wasn't as expected, so ignoring that packet");
 				if (last_packet_sent != null) {
 					//System.out.println("ack number wasn't as expected, so resending previous packet");
-					sendPacket(null, true);
+					sendPacket(null);
 				}
 				return;
 			}
@@ -485,7 +450,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 			else if(state == LAST_ACK){
 				//server state
 
-				cancelPacketTimer();
 				changeToState(TIME_WAIT);
 			}
 			else if(state == CLOSING){
@@ -514,12 +478,12 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 				TCPPacket synackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, true, false, recvBufLeft, null);
 				changeToState(SYN_RCVD);
-				sendPacket(synackPacket, false);
+				sendPacket(synackPacket);
 				seqNum++;
 			}
 
-		}
-		else if(p.finFlag){
+		} else if (p.finFlag){
+			cancel_resend();
 			System.out.println("a fin.");
 
 			if(state == ESTABLISHED){
@@ -528,42 +492,40 @@ class StudentSocketImpl extends BaseSocketImpl {
 				ackNum = p.seqNum + 1;
 				seqNum++;
 
-				cancelPacketTimer();
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
 				changeToState(CLOSE_WAIT);
-				sendPacket(ackPacket, false);
+				sendPacket(ackPacket);
 			}
 			else if(state == FIN_WAIT_1){
 				//client state or server state
 				ackNum = p.seqNum + 1;
 				seqNum++;
 
-				cancelPacketTimer();
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
 				changeToState(CLOSING);
-				sendPacket(ackPacket, false);
+				sendPacket(ackPacket);
 			}
 			else if(state == FIN_WAIT_2){
 				//client state
 				ackNum++;
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
 				changeToState(TIME_WAIT);
-				sendPacket(ackPacket, false);
+				sendPacket(ackPacket);
 			}
 			else if(state == LAST_ACK){
 				//server state, strange message due to packet loss
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
-				sendPacket(ackPacket, false);
+				sendPacket(ackPacket);
 			}
 			else if(state == CLOSING){
 				//client or server state, strange message due to packet loss
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
-				sendPacket(ackPacket, false);
+				sendPacket(ackPacket);
 			}
 			else if(state == TIME_WAIT){
 				//client or server state, strange message due to packet loss
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
-				sendPacket(ackPacket, false);
+				sendPacket(ackPacket);
 			}
 		} else {
 			System.out.println("<< Bad, we shouldn't be able to get here");
@@ -653,19 +615,17 @@ class StudentSocketImpl extends BaseSocketImpl {
 		if(state == ESTABLISHED){
 			//client state
 			ackNum++;
-			cancelPacketTimer();
 			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, true, recvBufLeft, null);
 			changeToState(FIN_WAIT_1);
-			sendPacket(finPacket, false);
+			sendPacket(finPacket);
 			finSent = true;
 			seqNum++;
 		}
 		else if(state == CLOSE_WAIT){
 			//server state
-			cancelPacketTimer();
 			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, true, recvBufLeft, null);
 			changeToState(LAST_ACK);
-			sendPacket(finPacket, false);
+			sendPacket(finPacket);
 			finSent = true;
 			seqNum++;
 		}
@@ -676,40 +636,36 @@ class StudentSocketImpl extends BaseSocketImpl {
 		}
 	}
 
-	/**
-	 * create TCPTimerTask instance, handling tcpTimer creation
-	 * @param delay time in milliseconds before call
-	 * @param ref generic reference to be returned to handleTimer
-	 */
-	private TCPTimerTask createTimerTask(long delay, Object ref){
-		if(tcpTimer == null)
-			tcpTimer = new Timer(false);
-		return new TCPTimerTask(tcpTimer, delay, this, ref);
+	private synchronized void cancel_resend() {
+		if (state == TIME_WAIT)
+			return;
+
+		tcpTimer.cancel();
+		tcpTimer = new Timer();
 	}
 
 
 	/**
-	 * handle timer expiration (called by TCPTimerTask)
+	 * handle timer expiration (called by SocketTimerTask)
 	 * @param ref Generic reference that can be used by the timer to return
 	 * information.
 	 */
-	public synchronized void handleTimer(Object ref){
+	public synchronized void handleTimer(Object ignore_me) {
 
-		if(ref == null){
-			// this must run only once the last timer (30 second timer) has expired
-			tcpTimer.cancel();
-			tcpTimer = null;
-
-			try{
+		// the last timer (30 second timer) has expired
+		if (last_packet_sent == null) {
+			try {
 				D.unregisterConnection(address, localport, port, this);
 			}
-			catch(IOException e){
-				System.out.println("Error occured while attempting to close connection");
+			catch (Exception e){
+				System.out.println("Error occured while attempting to close connection: " + e.toString());
 			}
+
+			return;
 		}
-		else{	//its a packet that needs to be resent
-			System.out.println("XXX Resending Packet");
-			sendPacket((TCPPacket)ref, true);
-		}
+
+		// its a packet that needs to be resent
+		System.out.println("XXX Resending Packet");
+		sendPacket(null);
 	}
 }
