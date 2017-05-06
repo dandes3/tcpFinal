@@ -180,8 +180,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 		// new timer, and requires the current state as a key
 		TCPWrapper.send(inPacket, address);
 
-		// only do timers for syns, fins, and data packets
-		if((inPacket.synFlag && !inPacket.ackFlag) || inPacket.finFlag || inPacket.data != null){
+		// only do timers for syns, acks, fins, and data packets
+		if((inPacket.synFlag && !inPacket.ackFlag) || inPacket.ackFlag || inPacket.finFlag || inPacket.data != null){
 			System.out.println("Creating new TimerTask at state " + stateString(state));
 			timerList.put(new Integer(state),createTimerTask(1000, inPacket));
 			packetList.put(new Integer(state), inPacket);
@@ -307,8 +307,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 			sendPacket(payloadPacket, false);
 
 			seqNum += packSize;
+			notifyAll();
 		}
-		notifyAll();
 
 		System.out.println("Out of sendData");
 	}
@@ -354,12 +354,14 @@ class StudentSocketImpl extends BaseSocketImpl {
 			try {wait();}
 			catch (InterruptedException e){e.printStackTrace();}
 		}
+		notifyAll();
 
 		attemptAppend(true, buffer, length);
 
 		if (terminating){pushed = true;}
 
 		sendData();
+		notifyAll();
 	}
 
 	/**
