@@ -167,8 +167,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 		// new timer, and requires the current state as a key
 		TCPWrapper.send(inPacket, address);
 
-		// only do timers for syns, syn-acks, and fins
-		if(inPacket.synFlag == true || inPacket.finFlag == true){
+		// only do timers for syns and fins
+		if((inPacket.synFlag && !inPacket.ackFlag) || inPacket.finFlag){
 			System.out.println("Creating new TimerTask at state " + stateString(state));
 			timerList.put(new Integer(state),createTimerTask(1000, inPacket));
 			packetList.put(new Integer(state), inPacket);
