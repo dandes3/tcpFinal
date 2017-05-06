@@ -147,8 +147,10 @@ class StudentSocketImpl extends BaseSocketImpl {
 			last_packet_sent = inPacket;
 
 		if (inPacket.data != null) {
-			System.out.println("really sending the following data: " + new String(inPacket.data));
+			//System.out.println("really sending the following data: " + new String(inPacket.data));
 			awaiting_ack = true;
+			//Timer dataTimer = new Timer(false);
+			createTimerTask(1000, inPacket);
 		}
 
 		if (resend) {
