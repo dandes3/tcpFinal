@@ -666,7 +666,15 @@ class StudentSocketImpl extends BaseSocketImpl {
 			wantsToClose = true;
 		}
 
-
+		// As per specifications, this allows a prolonged wait on the thread while still immediately returning (via threading)
+	    try{
+	     CloseThread kill = new CloseThread(this);
+	     kill.run();
+	    } 
+	    catch (Exception e){
+	      e.printStackTrace();
+	    }
+	    return;
 	}
 
 	private synchronized void cancel_resend() {
@@ -675,6 +683,16 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 		tcpTimer.cancel();
 		tcpTimer = new Timer();
+	}
+
+	// Get and workaround for getting close State
+	public int returnState(boolean currentState){
+	if(currentState){
+	  return state;
+	}
+	else{
+	  return CLOSED;
+	}
 	}
 
 
@@ -701,4 +719,33 @@ class StudentSocketImpl extends BaseSocketImpl {
 		System.out.println("XXX Resending Packet");
 		sendPacket(null);
 	}
+
+
 }
+
+/**
+ * Extension of a threading run class
+ *  allows the calling thread the immediately return to its parent function
+ *  while performing a wait() call untilt the thread closes itself
+ */
+class CloseThread implements Runnable{
+
+  public StudentSocketImpl threadToKill;
+  public CloseThread(StudentSocketImpl passed) throws InterruptedException{
+    this.threadToKill = passed;
+  }
+  
+  // Keep calling home and checking status against CLOSED and wait() until done 
+  public void run(){ 
+    while (threadToKill.returnState(true) != threadToKill.returnState(false)){
+      try {
+        threadToKill.wait();
+      } 
+      // General catch all
+      catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+  }
+}
+
