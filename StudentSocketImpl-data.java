@@ -135,7 +135,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			catch(IOException ioe){
 				System.out.println("close failed on socket");
 			}
-		} else if (newState == TIME_WAIT) {
+		} else if (newState == TIME_WAIT || newState == CLOSING) {
 			last_packet_sent = null;
 			tcpTimer.cancel();
 			tcpTimer = new Timer(false);
@@ -157,13 +157,13 @@ class StudentSocketImpl extends BaseSocketImpl {
 			last_control_packet = inPacket;
 
 		if (inPacket.data != null) {
-			//System.out.println("really sending the following data: " + new String(inPacket.data));
+			System.out.println("really sending the following data: " + new String(inPacket.data));
 			awaiting_ack = true;
 		}
 
 		TCPWrapper.send(inPacket, address);
 
-		if (state == TIME_WAIT) {
+		if (state == TIME_WAIT || state == CLOSING) {
 			last_packet_sent = null;
 			tcpTimer.schedule(new SocketTimerTask(this), 3000);
 
@@ -390,9 +390,15 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 			changeToState(ESTABLISHED);
 
-			attemptAppend(false, p.data, p.data.length);
+			/* only append if we don't have that data yet */
+			if (p.seqNum == ackNum) {
+				attemptAppend(false, p.data, p.data.length);
+				seqNum += p.data.length;
+			} else {
+				System.out.println("we already have that data, looks like our ACK was dropped. we'll send another ACK");
+				seqNum = p.ackNum;
+			}
 
-			seqNum += p.data.length;
 			ackNum = p.seqNum + p.data.length;
 
 			TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
@@ -430,9 +436,14 @@ class StudentSocketImpl extends BaseSocketImpl {
 			System.out.println("an ack.");
 
 			if (p.seqNum != ackNum || p.ackNum != seqNum) {
-				//System.out.println("ack number wasn't as expected, so ignoring that packet");
-				if (last_packet_sent != null) {
-					//System.out.println("ack number wasn't as expected, so resending previous packet");
+				System.out.print("seq/ack numbers received ");
+				System.out.print("(" + p.seqNum + "/" + p.ackNum + ")");
+				System.out.print(" weren't as expected ");
+				System.out.print("(" + seqNum + "/" + ackNum + ")");
+				if (last_packet_sent == null) {
+					System.out.println(" so ignoring that packet");
+				} else {
+					System.out.println(" so resending previous packet");
 					sendPacket(null);
 				}
 				return;
@@ -493,23 +504,26 @@ class StudentSocketImpl extends BaseSocketImpl {
 			}
 
 		} else if (p.finFlag){
-			cancel_resend();
 			System.out.println("a fin.");
 
-			if(state == ESTABLISHED){
+			if (state == CLOSE_WAIT) {
+				/* the ack that got us from ESTABLISHED to CLOSE_WAIT was dropped */
+
+			} else if (state == ESTABLISHED || state == CLOSE_WAIT) {
 				//server state
 
+				seqNum = p.ackNum;
 				ackNum = p.seqNum + 1;
-				seqNum++;
 
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
-				changeToState(CLOSE_WAIT);
 				sendPacket(ackPacket);
+
+				changeToState(CLOSE_WAIT);
 			}
 			else if(state == FIN_WAIT_1){
 				//client state or server state
+				seqNum = p.ackNum;
 				ackNum = p.seqNum + 1;
-				seqNum++;
 
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
 				changeToState(CLOSING);
@@ -517,7 +531,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 			}
 			else if(state == FIN_WAIT_2){
 				//client state
-				ackNum++;
+				seqNum = p.ackNum;
+				ackNum = p.seqNum + 1;
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
 				changeToState(TIME_WAIT);
 				sendPacket(ackPacket);
@@ -647,7 +662,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 	}
 
 	private synchronized void cancel_resend() {
-		if (state == TIME_WAIT)
+		if (state == TIME_WAIT || state == CLOSING)
 			return;
 
 		tcpTimer.cancel();
