@@ -509,7 +509,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 			if (state == CLOSE_WAIT) {
 				/* the ack that got us from ESTABLISHED to CLOSE_WAIT was dropped */
 
-			} else if (state == ESTABLISHED || state == CLOSE_WAIT) {
+			} 
+			else if (state == ESTABLISHED || state == CLOSE_WAIT) {
 				//server state
 
 				seqNum = p.ackNum;
@@ -632,7 +633,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			}
 			catch(InterruptedException e){}
 		}
-		//writer.close();
+		writer.close();
 
 		notifyAll();
 
