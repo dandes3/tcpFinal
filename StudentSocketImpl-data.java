@@ -139,7 +139,11 @@ class StudentSocketImpl extends BaseSocketImpl {
 	}
 
 	private synchronized void sendPacket(TCPPacket inPacket, boolean resend){
-		last_packet_sent = inPacket;
+		if (inPacket == null)
+			inPacket = last_packet_sent;
+		else
+			last_packet_sent = inPacket;
+
 
 		if (resend) {
 			//the packet is for resending, and requires the original state as the key
@@ -261,7 +265,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 			sendBufLeft += length;
 			sendBuffer.copyOut(buffer, sendBuffer.getBase(), length);
-			sendBuffer.advance(length);
 		}
 		else{
 			//System.out.println("In attemptRead recv");
@@ -391,6 +394,12 @@ class StudentSocketImpl extends BaseSocketImpl {
 		if (p.data != null && (state == SYN_RCVD || state == ESTABLISHED)) {
 			changeToState(ESTABLISHED);
 			attemptAppend(false, p.data, p.data.length);
+			seqNum = p.seqNum;
+			ackNum = p.seqNum + p.data.length;
+
+			TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
+			sendPacket(ackPacket, false);
+
 			return;
 		}
 
@@ -423,9 +432,12 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 			if (ackNum != p.seqNum) {
 				if (last_packet_sent != null)
-					sendPacket(last_packet_sent, true);
+					sendPacket(null, true);
 				return;
 			}
+
+			if (last_packet_sent.data != null)
+				sendBuffer.advance(last_packet_sent.data.length);
 
 			if(state == SYN_RCVD) {
 				//server state
@@ -526,13 +538,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			}
 		}
 		else{
-			System.out.println("a chunk of data.");
-			attemptAppend(false, p.data, p.data.length);
-
 			ackNum += p.data.length;
-
-			TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
-			sendPacket(ackPacket, false);
 
 			//String puller = new String(p.data);
 			//System.out.println(puller);
