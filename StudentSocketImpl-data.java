@@ -128,8 +128,9 @@ class StudentSocketImpl extends BaseSocketImpl {
 		System.out.println("!!! " + stateString(state) + "->" + stateString(newState));
 		state = newState;
 
-		//if (newState == CLOSE_WAIT && wantsToClose && !finSent){
-		if (newState == CLOSE_WAIT && sendBufSize == sendBufLeft){
+		if (newState == CLOSE_WAIT && wantsToClose && !finSent){
+		//if (newState == CLOSE_WAIT && sendBufSize == sendBufLeft){
+			System.out.println("<>< running closer inside the thread <><");
 			try{
 				close();
 			}
@@ -662,6 +663,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 			//timer task here... try the closing process again
 			wantsToClose = true;
 		}
+
+
 	}
 
 	private synchronized void cancel_resend() {
