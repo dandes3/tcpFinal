@@ -308,6 +308,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 			/* Please god work */
 			sendPacket(payloadPacket, false);
+			seqNum += payloadPacket.data.length;
 		}
 		notifyAll();
 
@@ -398,10 +399,12 @@ class StudentSocketImpl extends BaseSocketImpl {
 		System.out.println("Packet received from address " + p.sourceAddr + " with seqNum " + p.seqNum + " is being processed.");
 		System.out.print("The packet is ");
 
+		/* data received, send an ACK */
 		if (p.data != null && (state == SYN_RCVD || state == ESTABLISHED)) {
 			changeToState(ESTABLISHED);
 			attemptAppend(false, p.data, p.data.length);
-			seqNum = p.seqNum;
+
+			seqNum += p.data.length;
 			ackNum = p.seqNum + p.data.length;
 
 			TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
@@ -437,7 +440,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		}
 		else if(p.ackFlag){
 
-			if (ackNum != p.seqNum) {
+			if (p.seqNum != ackNum || p.ackNum != seqNum) {
 				System.out.println("ack number wasn't as expected, so ignoring that packet");
 				if (last_packet_sent != null) {
 					System.out.println("ack number wasn't as expected, so resending previous packet");
@@ -504,6 +507,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 				TCPPacket synackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, true, false, recvBufLeft, null);
 				changeToState(SYN_RCVD);
 				sendPacket(synackPacket, false);
+				seqNum++;
 			}
 
 		}
