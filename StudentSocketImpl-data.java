@@ -57,6 +57,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 	private int recvWindow;
 
+	private boolean awaiting_ack = false;
 
 	StudentSocketImpl(Demultiplexer D) {  // default constructor
 		this.D = D;
@@ -145,8 +146,10 @@ class StudentSocketImpl extends BaseSocketImpl {
 		else
 			last_packet_sent = inPacket;
 
-		if (inPacket.data != null)
+		if (inPacket.data != null) {
 			System.out.println("really sending the following data: " + new String(inPacket.data));
+			awaiting_ack = true;
+		}
 
 		if (resend) {
 			//the packet is for resending, and requires the original state as the key
@@ -350,7 +353,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * @param length number of bytes to copy
 	 */
 	synchronized void dataFromApp(byte[] buffer, int length){
-		while (state != ESTABLISHED || sendBufLeft == 0){
+		while (awaiting_ack || state != ESTABLISHED || sendBufLeft == 0){
 			try {wait();}
 			catch (InterruptedException e){e.printStackTrace();}
 		}
@@ -442,6 +445,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 			}
 		}
 		else if(p.ackFlag){
+
+			awaiting_ack = false;
 
 			if (p.seqNum != ackNum || p.ackNum != seqNum) {
 				System.out.println("ack number wasn't as expected, so ignoring that packet");
