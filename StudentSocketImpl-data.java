@@ -649,7 +649,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		if(state == ESTABLISHED){
 			//client state
 			ackNum++;
-			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, true, recvBufLeft, null);
+			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, true, recvBufLeft, null);
 			changeToState(FIN_WAIT_1);
 			sendPacket(finPacket, false);
 			finSent = true;
@@ -657,7 +657,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		}
 		else if(state == CLOSE_WAIT){
 			//server state
-			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, true, recvBufLeft, null);
+			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, true, recvBufLeft, null);
 			changeToState(LAST_ACK);
 			sendPacket(finPacket, false);
 			finSent = true;
