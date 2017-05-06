@@ -236,7 +236,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 		if(sendBuf){
 			//System.out.println("In attemptAppend send");
-			if ((sendBufLeft - sendBufSize) < 0){
+			if ((sendBufLeft - length) < 0){
 				System.out.println("Buffer circled around, panic and throw stuff.");
 				return;
 			}
@@ -248,7 +248,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		}
 		else{
 			//System.out.println("In attemptAppend recv");
-			if ((recvBufLeft - recvBufSize) < 0){
+			if ((recvBufLeft - length) < 0){
 				System.out.println("Buffer circled around, panic and throw stuff.");
 				return;
 			}
@@ -353,7 +353,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * @param length number of bytes to copy
 	 */
 	synchronized void dataFromApp(byte[] buffer, int length){
-		while (sendBufLeft == 0){
+		while (awaiting_ack || state != ESTABLISHED || sendBufLeft == 0){
 			try {wait();}
 			catch (InterruptedException e){e.printStackTrace();}
 		}
