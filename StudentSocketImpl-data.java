@@ -145,6 +145,9 @@ class StudentSocketImpl extends BaseSocketImpl {
 		else
 			last_packet_sent = inPacket;
 
+		if (inPacket.data != null)
+			System.out.println("really sending the following data: " + new String(inPacket.data));
+
 
 		if (resend) {
 			//the packet is for resending, and requires the original state as the key
