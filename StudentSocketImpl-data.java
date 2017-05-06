@@ -148,7 +148,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 		if (inPacket.data != null)
 			System.out.println("really sending the following data: " + new String(inPacket.data));
 
-
 		if (resend) {
 			//the packet is for resending, and requires the original state as the key
 			Enumeration keyList = timerList.keys();
@@ -439,8 +438,11 @@ class StudentSocketImpl extends BaseSocketImpl {
 		else if(p.ackFlag){
 
 			if (ackNum != p.seqNum) {
-				if (last_packet_sent != null)
+				System.out.println("ack number wasn't as expected, so ignoring that packet");
+				if (last_packet_sent != null) {
+					System.out.println("ack number wasn't as expected, so resending previous packet");
 					sendPacket(null, true);
+				}
 				return;
 			}
 
