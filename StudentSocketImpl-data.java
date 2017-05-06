@@ -300,15 +300,13 @@ class StudentSocketImpl extends BaseSocketImpl {
 			byte[] payload = new byte[packSize];
 			attemptRead(true, payload, packSize);
 
-			TCPPacket payloadPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, false, recvBufLeft, payload);
-
+			ackNum += packSize;
 			sentSpace += packSize;
-			seqNum += packSize;
-			String plaintext = new String(payload);
 
-			/* Please god work */
+			TCPPacket payloadPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, false, recvBufLeft, payload);
 			sendPacket(payloadPacket, false);
-			seqNum += payloadPacket.data.length;
+
+			seqNum += packSize;
 		}
 		notifyAll();
 
