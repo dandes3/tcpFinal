@@ -508,7 +508,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 			if (state == CLOSE_WAIT) {
 				/* the ack that got us from ESTABLISHED to CLOSE_WAIT was dropped */
-
+				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
+				sendPacket(ackPacket);
 			} 
 			else if (state == ESTABLISHED || state == CLOSE_WAIT) {
 				//server state
