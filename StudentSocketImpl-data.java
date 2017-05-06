@@ -370,7 +370,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 			if (awaiting_ack) {
 				System.out.println("but we expected an ACK to our data");
-				if (seqNum < ackNum) {
+				if (p.seqNum < ackNum) {
 					System.out.println("looks like our ACK was dropped last time, we'll send it again");
 					TCPPacket last_data_packet = last_packet_sent;
 					sendPacket(last_control_packet);
