@@ -447,6 +447,9 @@ class StudentSocketImpl extends BaseSocketImpl {
 		}
 		else if(p.ackFlag){
 
+			System.out.println("an ack.");
+
+			cancelPacketTimer();
 
 			if (p.seqNum != ackNum || p.ackNum != seqNum) {
 				System.out.println("ack number wasn't as expected, so ignoring that packet");
@@ -465,7 +468,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 			if(state == SYN_RCVD) {
 				//server state
 
-				cancelPacketTimer();
 				changeToState(ESTABLISHED);
 
 				if (p.data != null)
@@ -473,31 +475,18 @@ class StudentSocketImpl extends BaseSocketImpl {
 				return;
 			}
 
-			System.out.println("an ack.");
-
 			if(state == FIN_WAIT_1){
 				//client state
-				cancelPacketTimer();
 				changeToState(FIN_WAIT_2);
 			}
 			else if(state == LAST_ACK){
 				//server state
-
-				if (p.ackNum != seqNum || p.seqNum != ackNum) {
-					System.out.println("ack number wasn't as expected, so ignoring that packet");
-					if (last_packet_sent != null) {
-						System.out.println("ack number wasn't as expected, so resending previous packet");
-						sendPacket(null, true);
-					}
-					return;
-				}
 
 				cancelPacketTimer();
 				changeToState(TIME_WAIT);
 			}
 			else if(state == CLOSING){
 				//client or server state
-				cancelPacketTimer();
 				changeToState(TIME_WAIT);
 			}
 		}
