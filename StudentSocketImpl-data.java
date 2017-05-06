@@ -136,6 +136,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		else if(newState == TIME_WAIT){
 			createTimerTask(3000, null);
 		}
+		notifyAll();
 	}
 
 	private synchronized void sendPacket(TCPPacket inPacket, boolean resend){
