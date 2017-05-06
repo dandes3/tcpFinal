@@ -533,14 +533,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 			}
 			else if(state == FIN_WAIT_1){
 				//client state or server state
-				if (p.ackNum != seqNum || p.seqNum != ackNum) {
-					System.out.println("ack number wasn't as expected, so ignoring that packet");
-					if (last_packet_sent != null) {
-						System.out.println("ack number wasn't as expected, so resending previous packet");
-						sendPacket(null, true);
-					}
-					return;
-				}
+				ackNum = p.seqNum + 1;
+
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
 				changeToState(CLOSING);
 				sendPacket(ackPacket, false);
