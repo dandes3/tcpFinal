@@ -353,7 +353,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * @param length number of bytes to copy
 	 */
 	synchronized void dataFromApp(byte[] buffer, int length){
-		while (awaiting_ack || state != ESTABLISHED || sendBufLeft == 0){
+		while (sendBufLeft == 0){
 			try {wait();}
 			catch (InterruptedException e){e.printStackTrace();}
 		}
@@ -446,7 +446,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 		}
 		else if(p.ackFlag){
 
-			awaiting_ack = false;
 
 			if (p.seqNum != ackNum || p.ackNum != seqNum) {
 				System.out.println("ack number wasn't as expected, so ignoring that packet");
@@ -456,6 +455,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 				}
 				return;
 			}
+
+			awaiting_ack = false;
 
 			if (last_packet_sent.data != null)
 				sendBuffer.advance(last_packet_sent.data.length);
