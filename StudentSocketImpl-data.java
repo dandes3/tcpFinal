@@ -150,7 +150,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			last_packet_sent = inPacket;
 
 		if (inPacket.data != null) {
-			System.out.println("really sending the following data: " + new String(inPacket.data));
+			//System.out.println("really sending the following data: " + new String(inPacket.data));
 			awaiting_ack = true;
 		}
 
@@ -190,7 +190,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 	private synchronized void cancelPacketTimer(){
 		//must be called before changeToState is called!!!
-		System.out.println("cancelling timers");
+		//System.out.println("cancelling timers");
 
 		try {
 			if(state != CLOSING){
@@ -287,7 +287,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 	}
 
 	synchronized void sendData() {
-		System.out.println("In sendData");
+		//System.out.println("In sendData");
 
 		int sentSpace = -1;
 		if (recvWindow > 0){ sentSpace = 0;}
@@ -310,7 +310,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			notifyAll();
 		}
 
-		System.out.println("Out of sendData");
+		//System.out.println("Out of sendData");
 	}
 
 	/**
@@ -322,7 +322,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * @return number of bytes copied (by definition > 0)
 	 */
 	synchronized int getData(byte[] buffer, int length){
-		System.out.println("In getData");
+		//System.out.println("In getData");
 
 		while ((recvBufSize - recvBufLeft) == 0){
 			try {wait();}
@@ -338,7 +338,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 		notifyAll();
 
-		System.out.println("leaving getData");
+		//System.out.println("leaving getData");
 
 		return minReaderVal;
 	}
@@ -404,7 +404,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		if (p.data != null) {
 
 			if (state != SYN_RCVD && state != ESTABLISHED) {
-				System.out.println("unexpected data packet!");
+				//System.out.println("unexpected data packet!");
 				return;
 			}
 
@@ -455,9 +455,9 @@ class StudentSocketImpl extends BaseSocketImpl {
 			cancelPacketTimer();
 
 			if (p.seqNum != ackNum || p.ackNum != seqNum) {
-				System.out.println("ack number wasn't as expected, so ignoring that packet");
+				//System.out.println("ack number wasn't as expected, so ignoring that packet");
 				if (last_packet_sent != null) {
-					System.out.println("ack number wasn't as expected, so resending previous packet");
+					//System.out.println("ack number wasn't as expected, so resending previous packet");
 					sendPacket(null, true);
 				}
 				return;
