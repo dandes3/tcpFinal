@@ -125,6 +125,9 @@ class StudentSocketImpl extends BaseSocketImpl {
 	}
 
 	private synchronized void changeToState(int newState){
+		if (newState == state)
+			return;
+
 		System.out.println("!!! " + stateString(state) + "->" + stateString(newState));
 		state = newState;
 
@@ -398,9 +401,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 		if (p.data != null && (state == SYN_RCVD || state == ESTABLISHED)) {
 			System.out.println("a packet of data");
 
-			if (state != ESTABLISHED){
-				changeToState(ESTABLISHED);
-			}
+			cancelPacketTimer();
+			changeToState(ESTABLISHED);
 
 			attemptAppend(false, p.data, p.data.length);
 
