@@ -398,7 +398,13 @@ class StudentSocketImpl extends BaseSocketImpl {
 		System.out.print("The packet is ");
 
 		/* data received, send an ACK */
-		if (p.data != null && (state == SYN_RCVD || state == ESTABLISHED)) {
+		if (p.data != null) {
+
+			if (state != SYN_RCVD && state != ESTABLISHED) {
+				System.out.println("unexpected data packet!");
+				return;
+			}
+
 			System.out.println("a packet of data");
 
 			cancelPacketTimer();
@@ -529,6 +535,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 				ackNum = p.seqNum + 1;
 
+				cancelPacketTimer();
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
 				changeToState(CLOSE_WAIT);
 				sendPacket(ackPacket, false);
@@ -537,6 +544,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 				//client state or server state
 				ackNum = p.seqNum + 1;
 
+				cancelPacketTimer();
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
 				changeToState(CLOSING);
 				sendPacket(ackPacket, false);
@@ -651,6 +659,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		if(state == ESTABLISHED){
 			//client state
 			ackNum++;
+			cancelPacketTimer();
 			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, true, recvBufLeft, null);
 			changeToState(FIN_WAIT_1);
 			sendPacket(finPacket, false);
@@ -659,6 +668,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		}
 		else if(state == CLOSE_WAIT){
 			//server state
+			cancelPacketTimer();
 			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, true, recvBufLeft, null);
 			changeToState(LAST_ACK);
 			sendPacket(finPacket, false);
