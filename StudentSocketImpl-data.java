@@ -550,12 +550,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
 				sendPacket(ackPacket, false);
 			}
-		}
-		else{
-			ackNum += p.data.length;
-
-			//String puller = new String(p.data);
-			//System.out.println(puller);
+		} else {
+			System.out.println("<< Bad, we shouldn't be able to get here");
 		}
 	}
 
