@@ -463,7 +463,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		else if(p.synFlag){
 			System.out.println("a syn.");
 
-			if(state == LISTEN){
+			if(state == LISTEN || state == SYN_RCVD){
 				ackNum = p.seqNum + 1;
 				seqNum = 9000;
 
