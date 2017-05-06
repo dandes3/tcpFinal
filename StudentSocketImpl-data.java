@@ -382,6 +382,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		TCPPacket synPacket = new TCPPacket(localport, port, seqNum, ackNum, false, true, false, recvBufLeft, null);
 		changeToState(SYN_SENT);
 		sendPacket(synPacket, false);
+		seqNum += 1;
 	}
 
 	/**
@@ -407,11 +408,12 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 			attemptAppend(false, p.data, p.data.length);
 
-			seqNum += p.data.length;
 			ackNum = p.seqNum + p.data.length;
 
 			TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
 			sendPacket(ackPacket, false);
+
+			seqNum += p.data.length;
 
 			return;
 		}
@@ -423,7 +425,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 				//client state
 
 				ackNum = p.seqNum + 1;
-				seqNum++;
 
 				cancelPacketTimer();
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
@@ -465,9 +466,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 					receivePacket(p);
 				return;
 			}
-
-			ackNum = p.seqNum + 1;
-			seqNum++;
 
 			System.out.println("an ack.");
 			//for the love of God, do not incrementCounters(p) in here
