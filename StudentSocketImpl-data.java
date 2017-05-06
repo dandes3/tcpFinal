@@ -128,7 +128,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 		System.out.println("!!! " + stateString(state) + "->" + stateString(newState));
 		state = newState;
 
-		if (newState == CLOSE_WAIT && wantsToClose && !finSent){
+		//if (newState == CLOSE_WAIT && wantsToClose && !finSent){
+		if (newState == CLOSE_WAIT){
 			try{
 				close();
 			}
