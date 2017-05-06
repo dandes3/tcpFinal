@@ -629,7 +629,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 		terminating = true;
 
-		while(!reader.tryClose()){
+		while(!reader.tryClose() && (sendBufLeft != sendBufSize) && !pushed){
 			notifyAll();
 			try{
 				wait(1000);
