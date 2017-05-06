@@ -408,12 +408,11 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 			attemptAppend(false, p.data, p.data.length);
 
+			seqNum += p.data.length;
 			ackNum = p.seqNum + p.data.length;
 
 			TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
 			sendPacket(ackPacket, false);
-
-			seqNum += p.data.length;
 
 			return;
 		}
