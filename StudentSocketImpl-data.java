@@ -61,8 +61,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 	StudentSocketImpl(Demultiplexer D) {  // default constructor
 		this.D = D;
 		state = CLOSED;
-		seqNum = -1;
-		ackNum = -1;
+		seqNum = 0;
+		ackNum = 0;
 		timerList = new Hashtable<Integer, TCPTimerTask>();
 		packetList = new Hashtable<Integer, TCPPacket>();
 
