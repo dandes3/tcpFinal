@@ -636,7 +636,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			}
 			catch(InterruptedException e){}
 		}
-		writer.close();
+		//writer.close();
 
 		notifyAll();
 
