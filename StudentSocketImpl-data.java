@@ -190,6 +190,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 	private synchronized void cancelPacketTimer(){
 		//must be called before changeToState is called!!!
+		System.out.println("cancelling timers");
 
 		try {
 			if(state != CLOSING){
