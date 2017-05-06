@@ -189,17 +189,21 @@ class StudentSocketImpl extends BaseSocketImpl {
 	private synchronized void cancelPacketTimer(){
 		//must be called before changeToState is called!!!
 
-		if(state != CLOSING){
-			timerList.get(state).cancel();
-			timerList.remove(state);
-			packetList.remove(state);
-		}
-		else{
-			//the only time the state changes before an ack is received... so it must
-			//look back to where the fin timer started
-			timerList.get(FIN_WAIT_1).cancel();
-			timerList.remove(FIN_WAIT_1);
-			packetList.remove(FIN_WAIT_1);
+		try {
+			if(state != CLOSING){
+				timerList.get(state).cancel();
+				timerList.remove(state);
+				packetList.remove(state);
+			}
+			else{
+				//the only time the state changes before an ack is received... so it must
+				//look back to where the fin timer started
+				timerList.get(FIN_WAIT_1).cancel();
+				timerList.remove(FIN_WAIT_1);
+				packetList.remove(FIN_WAIT_1);
+			}
+		} catch (NullPointerException e) {
+			;
 		}
 	}
 
