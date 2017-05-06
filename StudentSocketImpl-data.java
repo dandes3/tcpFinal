@@ -399,7 +399,12 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 		/* data received, send an ACK */
 		if (p.data != null && (state == SYN_RCVD || state == ESTABLISHED)) {
-			changeToState(ESTABLISHED);
+			System.out.println("a packet of data")
+
+			if (state != ESTABLISHED){
+				changeToState(ESTABLISHED);
+			}
+			
 			attemptAppend(false, p.data, p.data.length);
 
 			seqNum += p.data.length;
