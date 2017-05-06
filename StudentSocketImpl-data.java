@@ -390,7 +390,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 				return;
 			}
 
-			changeToState(ESTABLISHED);
+			if(state != ESTABLISHED){ changeToState(ESTABLISHED);}
 
 			/* only append if we don't have that data yet */
 			if (p.seqNum == ackNum) {
