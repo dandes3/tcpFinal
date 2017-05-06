@@ -661,7 +661,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 				System.out.println("Error occured while attempting to close connection: " + e.toString());
 			}
 
-			return;
+			System.exit(0);
 		}
 
 		// its a packet that needs to be resent
