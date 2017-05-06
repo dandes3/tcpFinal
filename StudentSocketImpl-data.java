@@ -185,13 +185,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 		}
 	}
 
-	private synchronized void incrementCounters(TCPPacket p){
-		ackNum = p.seqNum + 1;
-
-		if(p.ackNum != -1)
-			seqNum = p.ackNum;
-	}
-
 	private synchronized void cancelPacketTimer(){
 		//must be called before changeToState is called!!!
 
@@ -473,7 +466,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 			}
 
 			System.out.println("an ack.");
-			//for the love of God, do not incrementCounters(p) in here
 
 			if(state == FIN_WAIT_1){
 				//client state
@@ -482,6 +474,16 @@ class StudentSocketImpl extends BaseSocketImpl {
 			}
 			else if(state == LAST_ACK){
 				//server state
+
+				if (p.ackNum != seqNum || p.seqNum != ackNum) {
+					System.out.println("ack number wasn't as expected, so ignoring that packet");
+					if (last_packet_sent != null) {
+						System.out.println("ack number wasn't as expected, so resending previous packet");
+						sendPacket(null, true);
+					}
+					return;
+				}
+
 				cancelPacketTimer();
 				changeToState(TIME_WAIT);
 			}
@@ -522,21 +524,30 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 			if(state == ESTABLISHED){
 				//server state
-				incrementCounters(p);
+
+				ackNum = p.seqNum + 1;
+
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
 				changeToState(CLOSE_WAIT);
 				sendPacket(ackPacket, false);
 			}
 			else if(state == FIN_WAIT_1){
 				//client state or server state
-				incrementCounters(p);
+				if (p.ackNum != seqNum || p.seqNum != ackNum) {
+					System.out.println("ack number wasn't as expected, so ignoring that packet");
+					if (last_packet_sent != null) {
+						System.out.println("ack number wasn't as expected, so resending previous packet");
+						sendPacket(null, true);
+					}
+					return;
+				}
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
 				changeToState(CLOSING);
 				sendPacket(ackPacket, false);
 			}
 			else if(state == FIN_WAIT_2){
 				//client state
-				incrementCounters(p);
+				ackNum++;
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
 				changeToState(TIME_WAIT);
 				sendPacket(ackPacket, false);
@@ -625,7 +636,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 		System.out.println("*** close() was called by the application.");
 
-		/* TODO: send all remaining data */
+		/* FIXME: do we need to send all remaining data? */
 
 		terminating = true;
 
@@ -640,19 +651,23 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 		notifyAll();
 
+
 		if(state == ESTABLISHED){
 			//client state
-			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, true, recvBufLeft, null);
+			ackNum++;
+			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, true, recvBufLeft, null);
 			changeToState(FIN_WAIT_1);
 			sendPacket(finPacket, false);
 			finSent = true;
+			seqNum++;
 		}
 		else if(state == CLOSE_WAIT){
 			//server state
-			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, true, recvBufLeft, null);
+			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, true, recvBufLeft, null);
 			changeToState(LAST_ACK);
 			sendPacket(finPacket, false);
 			finSent = true;
+			seqNum++;
 		}
 		else{
 			System.out.println("Attempted to close while not established (ESTABLISHED) or waiting to close (CLOSE_WAIT)");
