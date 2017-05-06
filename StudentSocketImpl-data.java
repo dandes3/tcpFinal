@@ -34,7 +34,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 	static final int data_bytes_per_packet = 1000;
 
-	public TCPPacket last_packet_sent = null;
+	private TCPPacket last_packet_sent = null;
+	private TCPPacket last_control_packet = null;
 
 	private PipedOutputStream appOS;
 	private PipedInputStream appIS;
@@ -151,6 +152,9 @@ class StudentSocketImpl extends BaseSocketImpl {
 			inPacket = last_packet_sent;
 		else
 			last_packet_sent = inPacket;
+
+		if (inPacket.data == null)
+			last_control_packet = inPacket;
 
 		if (inPacket.data != null) {
 			//System.out.println("really sending the following data: " + new String(inPacket.data));
@@ -364,21 +368,27 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 			System.out.println("a packet of data");
 
+			if (awaiting_ack) {
+				System.out.println("but we expected an ACK to our data");
+				if (seqNum < ackNum) {
+					System.out.println("looks like our ACK was dropped last time, we'll send it again");
+					TCPPacket last_data_packet = last_packet_sent;
+					sendPacket(last_control_packet);
+					sendPacket(last_data_packet);
+				} else {
+					System.out.println("looks like the client's ACK was dropped, we'll send data again");
+					sendPacket(null);
+				}
+
+				return;
+			}
+
 			if (state != SYN_RCVD && state != ESTABLISHED) {
 				System.out.println("unexpected data packet!");
 				return;
 			}
 
 			changeToState(ESTABLISHED);
-
-			if (p.seqNum != ackNum) {
-				System.out.println("data packet's seqNum wasn't what we expected (" + ackNum + ")");
-				if (p.seqNum < ackNum)
-					System.out.println("it looks like our last ACK was dropped");
-				System.out.println("resending last ACK");
-				sendPacket(null);
-				return;
-			}
 
 			attemptAppend(false, p.data, p.data.length);
 
