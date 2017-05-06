@@ -523,6 +523,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 				//server state
 
 				ackNum = p.seqNum + 1;
+				seqNum++;
 
 				cancelPacketTimer();
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
@@ -532,6 +533,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			else if(state == FIN_WAIT_1){
 				//client state or server state
 				ackNum = p.seqNum + 1;
+				seqNum++;
 
 				cancelPacketTimer();
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
