@@ -129,7 +129,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		state = newState;
 
 		//if (newState == CLOSE_WAIT && wantsToClose && !finSent){
-		if (newState == CLOSE_WAIT){
+		if (newState == CLOSE_WAIT && sendBufSize == sendBufLeft){
 			try{
 				close();
 			}
