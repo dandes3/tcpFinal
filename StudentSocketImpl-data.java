@@ -647,6 +647,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			//client state
 			while (awaiting_ack){
 				sendPacket(null);
+				notifyAll();
 				//wantsToClose = true;
 			}
 
