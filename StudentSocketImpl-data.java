@@ -623,6 +623,12 @@ class StudentSocketImpl extends BaseSocketImpl {
 		if(address==null)
 			return;
 
+		if(state == ESTABLISHED){
+			//client state
+			if(awaiting_ack){
+				close();
+			}
+
 		System.out.println("*** close() was called by the application.");
 
 		/* FIXME: do we need to send all remaining data? */
@@ -645,9 +651,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 		if(state == ESTABLISHED){
 			//client state
-			if(awaiting_ack){
-				close();
-			}
 
 			ackNum++;
 			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, true, recvBufLeft, null);
