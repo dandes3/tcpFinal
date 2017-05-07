@@ -130,7 +130,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 		if (newState == CLOSE_WAIT && wantsToClose && !finSent){
 		//if (newState == CLOSE_WAIT && sendBufSize == sendBufLeft){
-			System.out.println("<>< running closer inside the thread <><");
+			//System.out.println("<>< running closer inside the thread <><");
 			try{
 				close();
 			}
@@ -159,7 +159,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			last_control_packet = inPacket;
 
 		if (inPacket.data != null) {
-			System.out.println("really sending the following data: " + new String(inPacket.data));
+			//System.out.println("really sending the following data: " + new String(inPacket.data));
 			awaiting_ack = true;
 		}
 
@@ -371,14 +371,14 @@ class StudentSocketImpl extends BaseSocketImpl {
 			System.out.println("a packet of data");
 
 			if (awaiting_ack) {
-				System.out.println("but we expected an ACK to our data");
+				//System.out.println("but we expected an ACK to our data");
 				if (p.seqNum < ackNum) {
-					System.out.println("looks like our ACK was dropped last time, we'll send it again");
+					//System.out.println("looks like our ACK was dropped last time, we'll send it again");
 					TCPPacket last_data_packet = last_packet_sent;
 					sendPacket(last_control_packet);
 					sendPacket(last_data_packet);
 				} else {
-					System.out.println("looks like the client's ACK was dropped, we'll send data again");
+					//System.out.println("looks like the client's ACK was dropped, we'll send data again");
 					sendPacket(null);
 				}
 
@@ -397,7 +397,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 				attemptAppend(false, p.data, p.data.length);
 				seqNum += p.data.length;
 			} else {
-				System.out.println("we already have that data, looks like our ACK was dropped. we'll send another ACK");
+				//System.out.println("we already have that data, looks like our ACK was dropped. we'll send another ACK");
 				seqNum = p.ackNum;
 			}
 
@@ -438,14 +438,14 @@ class StudentSocketImpl extends BaseSocketImpl {
 			System.out.println("an ack.");
 
 			if (p.seqNum != ackNum || p.ackNum != seqNum) {
-				System.out.print("seq/ack numbers received ");
-				System.out.print("(" + p.seqNum + "/" + p.ackNum + ")");
-				System.out.print(" weren't as expected ");
-				System.out.print("(" + seqNum + "/" + ackNum + ")");
+				//System.out.print("seq/ack numbers received ");
+				//System.out.print("(" + p.seqNum + "/" + p.ackNum + ")");
+				//System.out.print(" weren't as expected ");
+				//System.out.print("(" + seqNum + "/" + ackNum + ")");
 				if (last_packet_sent == null) {
-					System.out.println(" so ignoring that packet");
+					//System.out.println(" so ignoring that packet");
 				} else {
-					System.out.println(" so resending previous packet");
+					//System.out.println(" so resending previous packet");
 					sendPacket(null);
 				}
 				return;
@@ -631,7 +631,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 		//while(!reader.tryClose() && (sendBufLeft != sendBufSize) && !pushed){
 		while(!reader.tryClose()){
-			System.out.println("<><><> Doin a heckin good wait <><><><>");
+			//System.out.println("<><><> Doin a heckin good wait <><><><>");
 			notifyAll();
 			try{
 				wait(1000);
