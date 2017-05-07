@@ -667,14 +667,14 @@ class StudentSocketImpl extends BaseSocketImpl {
 		}
 
 		// As per specifications, this allows a prolonged wait on the thread while still immediately returning (via threading)
-	    try{
-	     CloseThread kill = new CloseThread(this);
-	     kill.run();
-	    } 
-	    catch (Exception e){
-	      e.printStackTrace();
-	    }
-	    return;
+	    // try{
+	    //  CloseThread kill = new CloseThread(this);
+	    //  kill.run();
+	    // } 
+	    // catch (Exception e){
+	    //   e.printStackTrace();
+	    // }
+	    // return;
 	}
 
 	private synchronized void cancel_resend() {
@@ -726,7 +726,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 /**
  * Extension of a threading run class
  *  allows the calling thread the immediately return to its parent function
- *  while performing a wait() call untilt the thread closes itself
+ *  while performing a wait() call until the thread closes itself
  */
 class CloseThread implements Runnable{
 
