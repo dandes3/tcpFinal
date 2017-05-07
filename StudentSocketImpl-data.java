@@ -628,6 +628,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			if(awaiting_ack){
 				close();
 			}
+		}
 
 		System.out.println("*** close() was called by the application.");
 
@@ -651,7 +652,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 		if(state == ESTABLISHED){
 			//client state
-
 			ackNum++;
 			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, true, recvBufLeft, null);
 			changeToState(FIN_WAIT_1);
