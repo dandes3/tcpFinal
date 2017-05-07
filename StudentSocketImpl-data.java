@@ -623,12 +623,12 @@ class StudentSocketImpl extends BaseSocketImpl {
 		if(address==null)
 			return;
 
-		if(state == ESTABLISHED){
-			//client state
-			if(awaiting_ack){
-				close();
-			}
-		}
+		// if(state == ESTABLISHED){
+		// 	//client state
+		// 	if(awaiting_ack){
+		// 		close();
+		// 	}
+		// }
 
 		System.out.println("*** close() was called by the application.");
 
