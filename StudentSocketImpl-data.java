@@ -1,3 +1,21 @@
+
+/* TCP State machine
+ * by Don Andes and Quint Guvernator
+ *
+ * As per our original hopes, we inititally attempted to integrate and write
+ * this project in Scala. While Scala does have the ability to integrate into 
+ * existing Java code, it proved beyond the scope of our ability for this 
+ * project. We have instead opted to fall back on the original specifications
+ * and deliver our final product in Java. 
+ *
+ * We would like to sincerely thank you for allowing us to attempt these projects
+ * in a language we did not intitially know, and for your patience in grading them.
+ *
+ * Thank you for the great semester. 
+ */
+
+
+
 import java.net.*;
 import java.io.*;
 import java.util.*;
@@ -129,8 +147,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 		state = newState;
 
 		if (newState == CLOSE_WAIT && wantsToClose && !finSent){
-		//if (newState == CLOSE_WAIT && sendBufSize == sendBufLeft){
-			//System.out.println("<>< running closer inside the thread <><");
 			try{
 				close();
 			}
@@ -159,7 +175,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 			last_control_packet = inPacket;
 
 		if (inPacket.data != null) {
-			//System.out.println("really sending the following data: " + new String(inPacket.data));
 			awaiting_ack = true;
 		}
 
@@ -197,7 +212,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 	private synchronized void attemptAppend(boolean sendBuf, byte[] buffer, int length){
 
 		if(sendBuf){
-			//System.out.println("In attemptAppend send");
 			if ((sendBufLeft - length) < 0){
 				System.out.println("Buffer circled around, panic and throw stuff.");
 				return;
@@ -205,11 +219,9 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 			sendBufLeft -= length;
 			sendBuffer.append(buffer, 0, length);
-			//System.out.println(sendBufLeft);
 			return;
 		}
 		else{
-			//System.out.println("In attemptAppend recv");
 			if ((recvBufLeft - length) < 0){
 				System.out.println("Buffer circled around, panic and throw stuff.");
 				return;
@@ -217,7 +229,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 			recvBufLeft -= length;
 			recvBuffer.append(buffer, 0, length);
-			//System.out.println(recvBufLeft);
 			return;
 		}
 	}
@@ -229,8 +240,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 	private synchronized void attemptRead(boolean sendBuf, byte[] buffer, int length) {
 
 		if(sendBuf){
-
-			//System.out.println("In attemptRead send");
 			if ((length == 0) || ((sendBufLeft + length) > sendBufSize)) { // Control for bogus length of read 0
 				System.out.println("Reading too far or given length of zero. I can't believe you've done this.");
 			}
@@ -239,7 +248,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 			sendBuffer.copyOut(buffer, sendBuffer.getBase(), length);
 		}
 		else{
-			//System.out.println("In attemptRead recv");
 			if ((length == 0) || ((recvBufLeft + length) > recvBufSize)) { // Control for bogus length of read 0
 				System.out.println("Reading too far or given length of zero. I can't believe you've done this.");
 			}
@@ -252,8 +260,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 	}
 
 	synchronized void sendData() {
-		//System.out.println("In sendData");
-
 		int sentSpace = -1;
 		if (recvWindow > 0){ sentSpace = 0;}
 
@@ -274,8 +280,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 			seqNum += packSize;
 		}
 		notifyAll();
-
-		//System.out.println("Out of sendData");
 	}
 
 	/**
@@ -300,10 +304,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		}
 
 		attemptRead(false, buffer, minReaderVal);
-
 		notifyAll();
-
-		//System.out.println("leaving getData");
 
 		return minReaderVal;
 	}
@@ -357,8 +358,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 	 * @param p The packet that arrived
 	 */
 	public synchronized void receivePacket(TCPPacket p){
-		//System.out.println("Running receivePacket again");
-
 		this.notifyAll();
 		recvWindow = p.windowSize;
 
@@ -371,14 +370,11 @@ class StudentSocketImpl extends BaseSocketImpl {
 			System.out.println("a packet of data");
 
 			if (awaiting_ack) {
-				//System.out.println("but we expected an ACK to our data");
 				if (p.seqNum < ackNum) {
-					//System.out.println("looks like our ACK was dropped last time, we'll send it again");
 					TCPPacket last_data_packet = last_packet_sent;
 					sendPacket(last_control_packet);
 					sendPacket(last_data_packet);
 				} else {
-					//System.out.println("looks like the client's ACK was dropped, we'll send data again");
 					sendPacket(null);
 				}
 
@@ -397,7 +393,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 				attemptAppend(false, p.data, p.data.length);
 				seqNum += p.data.length;
 			} else {
-				//System.out.println("we already have that data, looks like our ACK was dropped. we'll send another ACK");
 				seqNum = p.ackNum;
 			}
 
@@ -416,7 +411,6 @@ class StudentSocketImpl extends BaseSocketImpl {
 				//client state
 
 				ackNum = p.seqNum + 1;
-
 				TCPPacket ackPacket = new TCPPacket(localport, port, seqNum, ackNum, true, false, false, recvBufLeft, null);
 				changeToState(ESTABLISHED);
 				sendPacket(ackPacket);
@@ -438,14 +432,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 			System.out.println("an ack.");
 
 			if (p.seqNum != ackNum || p.ackNum != seqNum) {
-				//System.out.print("seq/ack numbers received ");
-				//System.out.print("(" + p.seqNum + "/" + p.ackNum + ")");
-				//System.out.print(" weren't as expected ");
-				//System.out.print("(" + seqNum + "/" + ackNum + ")");
 				if (last_packet_sent == null) {
-					//System.out.println(" so ignoring that packet");
 				} else {
-					//System.out.println(" so resending previous packet");
 					sendPacket(null);
 				}
 				return;
@@ -625,13 +613,9 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 		System.out.println("*** close() was called by the application.");
 
-		/* FIXME: do we need to send all remaining data? */
-
 		terminating = true;
-
-		//while(!reader.tryClose() && (sendBufLeft != sendBufSize) && !pushed){
+		
 		while(!reader.tryClose()){
-			//System.out.println("<><><> Doin a heckin good wait <><><><>");
 			notifyAll();
 			try{
 				wait(1000);
@@ -647,9 +631,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 			//client state
 			if (awaiting_ack){
 				sendPacket(null);
-				//wantsToClose = true;
 			}
-
 
 			ackNum++;
 			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, true, recvBufLeft, null);
@@ -668,19 +650,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 		}
 		else{
 			System.out.println("Attempted to close while not established (ESTABLISHED) or waiting to close (CLOSE_WAIT)");
-			//timer task here... try the closing process again
 			wantsToClose = true;
 		}
-
-		// As per specifications, this allows a prolonged wait on the thread while still immediately returning (via threading)
-	    // try{
-	    //  CloseThread kill = new CloseThread(this);
-	    //  kill.run();
-	    // } 
-	    // catch (Exception e){
-	    //   e.printStackTrace();
-	    // }
-	    // return;
 	}
 
 	private synchronized void cancel_resend() {
