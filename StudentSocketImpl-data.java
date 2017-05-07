@@ -272,8 +272,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 			sendPacket(payloadPacket);
 
 			seqNum += packSize;
-			notifyAll();
 		}
+		notifyAll();
 
 		//System.out.println("Out of sendData");
 	}
