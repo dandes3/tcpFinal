@@ -650,14 +650,13 @@ class StudentSocketImpl extends BaseSocketImpl {
 				//wantsToClose = true;
 			}
 
-			else{
-				ackNum++;
-				TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, true, recvBufLeft, null);
-				changeToState(FIN_WAIT_1);
-				sendPacket(finPacket);
-				finSent = true;
-				seqNum++;
-		    }
+
+			ackNum++;
+			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, true, recvBufLeft, null);
+			changeToState(FIN_WAIT_1);
+			sendPacket(finPacket);
+			finSent = true;
+			seqNum++;
 		}
 		else if(state == CLOSE_WAIT){
 			//server state
