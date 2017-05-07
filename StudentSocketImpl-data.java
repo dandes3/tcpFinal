@@ -645,19 +645,18 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 		if(state == ESTABLISHED){
 			//client state
-			if (awaiting_ack){
+			while (awaiting_ack){
 				sendPacket(null);
 				//wantsToClose = true;
 			}
 
-			else{
-				ackNum++;
-				TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, true, recvBufLeft, null);
-				changeToState(FIN_WAIT_1);
-				sendPacket(finPacket);
-				finSent = true;
-				seqNum++;
-		    }
+			ackNum++;
+			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, true, recvBufLeft, null);
+			changeToState(FIN_WAIT_1);
+			sendPacket(finPacket);
+			finSent = true;
+			seqNum++;
+
 		}
 		else if(state == CLOSE_WAIT){
 			//server state
