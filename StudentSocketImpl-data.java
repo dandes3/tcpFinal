@@ -645,10 +645,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 		if(state == ESTABLISHED){
 			//client state
-			while (awaiting_ack){
-				sendPacket(null);
-				notifyAll();
-				//wantsToClose = true;
+			if(awaiting_ack){
+				close();
 			}
 
 			ackNum++;
