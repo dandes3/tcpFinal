@@ -373,12 +373,12 @@ class StudentSocketImpl extends BaseSocketImpl {
 			if (awaiting_ack) {
 				//System.out.println("but we expected an ACK to our data");
 				if (p.seqNum < ackNum) {
-					//System.out.println("looks like our ACK was dropped last time, we'll send it again");
+					System.out.println("looks like our ACK was dropped last time, we'll send it again");
 					TCPPacket last_data_packet = last_packet_sent;
 					sendPacket(last_control_packet);
 					sendPacket(last_data_packet);
 				} else {
-					//System.out.println("looks like the client's ACK was dropped, we'll send data again");
+					System.out.println("looks like the client's ACK was dropped, we'll send data again");
 					sendPacket(null);
 				}
 
@@ -630,7 +630,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 		terminating = true;
 
 		//while(!reader.tryClose() && (sendBufLeft != sendBufSize) && !pushed){
-		while(!reader.tryClose()){
+		while(!reader.tryClose()) {
 			//System.out.println("<><><> Doin a heckin good wait <><><><>");
 			notifyAll();
 			try{
