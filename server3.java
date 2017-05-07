@@ -33,15 +33,19 @@ public class server3 {
       out.println("great.  good bye!");
       System.out.println("sent goodbye");
 
+      System.out.println("??????? Starting sanity check ???????????");
       for(int i=0;i<250;i++){
-	int num = Integer.parseInt(in.readLine().trim());
-	if(num!= i)
-	  System.err.println("error: "+i+" != "+num);
+        int num = Integer.parseInt(in.readLine().trim());
+        if(num!= i)
+          System.err.println("error: "+i+" != "+num);
+        System.out.print("Verify for num was sucessful: ");
+        System.out.println(num);
       }
 
       for(int i=0;i<250;i++)
-	out.println(i);
+        out.println(i);
 
+      System.out.println("??????? About to close ???????????");
       connSock.close();
       sock.close();
 
