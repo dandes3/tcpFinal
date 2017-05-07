@@ -651,6 +651,11 @@ class StudentSocketImpl extends BaseSocketImpl {
 
 
 		if(state == ESTABLISHED){
+
+			if(awaiting_ack){
+		 		sendPacket(null);
+		  	}
+		  	
 			//client state
 			ackNum++;
 			TCPPacket finPacket = new TCPPacket(localport, port, seqNum, ackNum, false, false, true, recvBufLeft, null);
