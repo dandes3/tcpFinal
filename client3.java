@@ -40,6 +40,7 @@ public class client3 {
 	       int num = Integer.parseInt(in.readLine().trim());
 	       if(num!= i)
 	         System.err.println("error: "+i+" != "+num);
+         System.out.print("");
          System.out.print("Verify for num was sucessful: ");
          System.out.print(num);
       }
